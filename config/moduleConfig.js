@@ -12,6 +12,13 @@ const moduleConfig = [
         "status": false,
         "route": true,
         "routeName": "admin"
+    },
+    {
+        "type": "payment",
+        "apiVersion": "v1",
+        "status": true,
+        "route": true,
+        "routeName": "payment"
     }
 ]
 
