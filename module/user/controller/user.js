@@ -58,7 +58,6 @@ module.exports = {
             // Hash password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(data.password, salt);
-
             let userNew = await User.create({
               phoneNumber: data.phoneNumber,
               password: hashedPassword,
