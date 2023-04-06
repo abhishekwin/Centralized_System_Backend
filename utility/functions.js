@@ -26,7 +26,9 @@ let userAuthentication = async (req, res, next) => {
   }
 
   const userExists = await User.findOne({ token: token });
+  console.log("🚀 ~ file: functions.js:29 ~ userAuthentication ~ userExists:", userExists)
   if (!userExists) {
+    console.log("🚀 ~ file: functions.js:31 ~ userAuthentication ~ userExists:", userExists)
     return res.status(500).send({
       status: "failure",
       status_code: 500,

@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("./controller/user");
-const Authentication = require("../../utility/functions");
 
 const { userAuthentication } = require("../../utility/functions");
 
@@ -14,6 +13,8 @@ router.post("/login",userController.login);
 
 router.post('/userKYC', userAuthentication,userController.userKYC);
 router.post('/verifyKYC', userAuthentication,userController.adharSumitOtp);
+
 router.post('/updateUser',userAuthentication, userController.updateUserProfile);
+router.post('/updateEmailPhone',userAuthentication, userController.updateEmailPhone);
 
 module.exports = router;

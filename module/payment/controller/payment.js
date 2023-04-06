@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const env = require("../../../config/env");
 const bcrypt = require("bcrypt");
 const axios = require("axios");
-
+const User = require("../../user/model/userTable");
 module.exports = {
   createUPI: async (req, res) => {
     try {
@@ -18,7 +18,7 @@ module.exports = {
       }
       const userExists = await User.findOne({ _id: req.decode._id });
       if (userExists) {
-        let newUpi = await PaymentMethod.create({
+        let newUpi = await Payment.create({
           userId: req.decode._id,
           name: data.name,
           upiId: data.upiId,
@@ -44,20 +44,17 @@ module.exports = {
   },
   getUPI: async (req, res) => {
     try {
-      const userExists = await User.findOne({ _id: req.decode._id });
-
-      if (userExists) {
-        let upiIds = await PaymentMethod.findOne({
-          userId: req.decode.userDetails.userId,
+        let allPayements = await Payment.find({
+          userId: req.decode._id,
+          status: true
         });
         return utilityFunc.sendSuccessResponse(
           {
-            exist: true,
-            data: upiIds.upiId,
+            message: "Get All Payments!",
+            data: allPayements,
           },
           res
         );
-      }
     } catch (error) {
       console.log("error", error);
       return utilityFunc.sendErrorResponse(error, res);
@@ -67,30 +64,35 @@ module.exports = {
     try {
       let data = req.body;
       let validationData = await utilityFunc.validationData(req.body, [
-        "userId",
+        "paymentId",
       ]);
 
       if (validationData && validationData.status) {
         return utilityFunc.sendErrorResponse(validationData.error, res);
       }
-
-      const userExists = await PaymentMethod.findOne({
-        userId: req.decode.userDetails.userId,
+      const paymentExist = await Payment.findOne({
+        _id: req.body.paymentId,
+        status: true
       });
 
-      if (userExists) {
-        await PaymentMethod.findOneAndUpdate(
-          { userId: req.decode.userDetails.userId },
+      if (paymentExist) {
+        await Payment.findOneAndUpdate(
+          { _id: req.body.paymentId },
           { $set: { status: false } }
         );
         return utilityFunc.sendSuccessResponse(
           {
             message: "UPI Deleted",
-            exist: true,
+            success: true
           },
           res
         );
+      }else{
+        return utilityFunc.sendErrorResponse("Payment Not Exist!", res);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log("error", error);
+      return utilityFunc.sendErrorResponse(error, res);
+    }
   },
 };

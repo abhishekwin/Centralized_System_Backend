@@ -253,7 +253,7 @@ module.exports = {
           );
           return utilityFunc.sendSuccessResponse(
             {
-              message: "Login Success",
+              message: "Account Verified !",
               login: true,
               exist: true,
               token: userFound.token,
@@ -277,7 +277,7 @@ module.exports = {
           );
           return utilityFunc.sendSuccessResponse(
             {
-              message: "Login Success",
+              message: "Account Verified !",
               login: true,
               exist: true,
               token: userFound.token,
@@ -558,8 +558,7 @@ module.exports = {
         { _id: req.decode._id },
         {
           $set: {
-            userDetails: {
-              userId: req.decode._id,
+            address: {
               userName: data.userName,
               nationality: data.nationality,
               dateOfBirth: data.dateOfBirth,
@@ -586,4 +585,62 @@ module.exports = {
       return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
     }
   },
+  updateEmailPhone: async (req, res) => {
+
+    try {
+      let data = req.body;
+      if (!data.email && !data.phoneNumber) {
+        return utilityFunc.sendErrorResponse("Please Enter Email or Phone", res);
+      }
+      if (data.email) {
+        let emailExist = await User.find({ email: req.body.email });
+        if (emailExist.length > 0) {
+          return utilityFunc.sendErrorResponse({
+            message: "Email Already Exist"
+          }, res);
+
+        }
+        else {
+          await User.findOneAndUpdate(
+            { _id: req.decode._id },
+            { $set: { email: data.email } }
+          );
+          return utilityFunc.sendSuccessResponse({
+            message: "Email Updated",
+            success: true
+          }, res);
+
+        }
+      } else if (data.phoneNumber) {
+        let phoneNumberExist = await User.find({ phoneNumber: req.body.phoneNumber });
+        if (phoneNumberExist.length > 0) {
+          return utilityFunc.sendErrorResponse({
+            message: "Phone Number Already exists"
+          }, res);
+        } else {
+          await User.findOneAndUpdate(
+            { _id: req.decode._id },
+            { $set: { phoneNumber: data.phoneNumber } }
+          );
+          return utilityFunc.sendSuccessResponse({
+            message: "Phone Number Updated",
+            success: true
+          }, res);
+        }
+      } else {
+        return utilityFunc.sendErrorResponse({
+          message: "Failed to Update Email or Phone"
+        }, res);
+
+      }
+    } catch (error) {
+      console.log("🚀 ~ file: user.js:636 ~ updateEmailPhone: ~ error:", error)
+
+      return utilityFunc.sendErrorResponse({
+        message: "Phone Number Already exists"
+      }, res);
+    }
+
+
+  }
 };

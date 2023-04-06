@@ -23,8 +23,7 @@ let userSchema = mongoose.Schema(
     cryptoAddress: { type: String, default: "" },
     wId: { type: String, default: "" },
     status: { type: Boolean, default: false },
-    userDetails: {
-      userId: { type: String, default: "" },
+    address: {
       userName: { type: String, default: "" },
       nationality: { type: String, default: "" },
       dateOfBirth: { type: String, default: "" },
