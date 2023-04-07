@@ -1,7 +1,7 @@
 const User = require("../../user/model/userTable");
 const utilityFunc = require("../../../utility/functions");
 var jwt = require("jsonwebtoken");
-require("dotenv").config();
+const env = require("../../../config/env");
 const bcrypt = require("bcrypt");
 const axios = require("axios");
 
@@ -18,21 +18,25 @@ module.exports = {
   createAccount: async (req, res) => {
     try {
       let data = req.body;
+
       let validationData = await utilityFunc.validationData(req.body, [
         "password",
       ]);
       if (validationData && validationData.status) {
         return utilityFunc.sendErrorResponse(validationData.error, res);
       }
-
-      // Generate wallet Address per user
-      const walletdata = await utilityFunc.GenratePrivateKey();
       if (!data.email && !data.phoneNumber) {
         return utilityFunc.sendErrorResponse(
           "Email Or Phone Number Is Required!",
           res
         );
       }
+
+      //Generate Crypto Address Here
+
+      const walletdata = await utilityFunc.GenratePrivateKey();
+      console.log(walletdata);
+      console.log(walletdata.publicAddress, walletdata.wId, "generated");
 
       if (data.phoneNumber) {
         userExist = await User.findOne({ phoneNumber: data.phoneNumber });
@@ -44,15 +48,15 @@ module.exports = {
         } else {
           let OTPData = await utilityFunc.createMsg(req);
           if (OTPData && OTPData.body) {
-            //Generate Crypto Address Here
             var numb = OTPData.body.match(/\d/g);
             numb = numb.join("");
+
             let token = await jwt.sign(
               {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.phoneNumber,
               },
-              process.env.JWT_SECRET
+              env.JWT_SECRET
             );
 
             // Hash password
@@ -63,9 +67,9 @@ module.exports = {
               phoneNumber: data.phoneNumber,
               password: hashedPassword,
               OTP: numb,
-              cryptoAddress: walletdata.publicAddress,
-              wId: walletdata.wId,
               token: token,
+              wId: walletdata.wId,
+              cryptoAddress: walletdata.publicAddress,
             });
 
             return utilityFunc.sendSuccessResponse(
@@ -91,26 +95,28 @@ module.exports = {
         } else {
           let OTPData = await utilityFunc.createEmail(req);
           if (OTPData && OTPData.OTP) {
-            // cripto data
-
             let token = await jwt.sign(
               {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.email,
               },
-              process.env.JWT_SECRET
+              env.JWT_SECRET
             );
             // Hash Password
             const salt = await bcrypt.genSalt(10);
-
             const hashedPassword = await bcrypt.hash(data.password, salt);
+            console.log(
+              "🚀 ~ file: user.js:56 ~ createAccount: ~ hashedPassword:",
+              hashedPassword
+            );
+
             let userNew = await User.create({
               email: data.email,
               password: hashedPassword,
               OTP: OTPData.OTP,
-              cryptoAddress: walletdata.publicAddress,
-              wId: walletdata.wId,
               token: token,
+              wId: walletdata.wId,
+              cryptoAddress: walletdata.publicAddress,
             });
             return utilityFunc.sendSuccessResponse(
               {
@@ -312,28 +318,22 @@ module.exports = {
 
       if (data.phoneNumber) {
         const userExist = await User.findOne({ phoneNumber: data.phoneNumber });
-
         if (!userExist) {
           // If user does not exist
-          console.log("Inside User Not Exists");
-          return utilityFunc.sendErrorResponse(
-            "User Phone Number Not Exists",
-            res
-          );
+          return utilityFunc.sendErrorResponse("User does not exists", res);
         } else {
+          // Get the password & Hash it
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(data.password, salt);
           // Compare the passwords
-          const passCheck = await bcrypt.compare(
-            data.password,
-            userExist.password
-          );
-          if (passCheck) {
+          if (data.password === hashedPassword) {
             // Create New the JWT token
             const newToken = await jwt.sign(
               {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.phoneNumber,
               },
-              process.env.JWT_SECRET
+              env.JWT_SECRET
             );
 
             // Update the token in DB
@@ -342,16 +342,13 @@ module.exports = {
               { $set: { token: newToken } },
               { new: true }
             );
-            return utilityFunc.sendSuccessResponse(
-              {
-                login: true,
-                exist: true,
-                password: true,
-                updatedToken: newToken,
-                user: newUser,
-              },
-              res
-            );
+            return utilityFunc.sendSuccessResponse({
+              login: true,
+              exist: true,
+              password: true,
+              updatedToken: newToken,
+              user: newUser,
+            });
           } else {
             return utilityFunc.sendErrorResponse("Invalid password!", res);
           }
@@ -360,24 +357,20 @@ module.exports = {
       if (data.email) {
         const userExist = await User.findOne({ email: data.email });
         if (!userExist) {
-          return utilityFunc.sendErrorResponse(
-            "User Email Does Not Exists",
-            res
-          );
+          return utilityFunc.sendErrorResponse("User does not exists", res);
         } else {
-          const passCheck = await bcrypt.compare(
-            data.password,
-            userExist.password
-          );
+          // Get the password & Hash it
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(data.password, salt);
           // Compare the passwords
-          if (passCheck) {
+          if (data.password === hashedPassword) {
             // Create New the JWT token
             const newToken = await jwt.sign(
               {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.email,
               },
-              process.env.JWT_SECRET
+              env.JWT_SECRET
             );
 
             // Update the token in DB
@@ -385,16 +378,13 @@ module.exports = {
               { email: data.email },
               { $set: { token: newToken } }
             );
-            return utilityFunc.sendSuccessResponse(
-              {
-                login: true,
-                exist: true,
-                password: true,
-                updatedToken: newToken,
-                user: newUser,
-              },
-              res
-            );
+            return utilityFunc.sendSuccessResponse({
+              login: true,
+              exist: true,
+              password: true,
+              updatedToken: newToken,
+              user: newUser,
+            });
           }
         }
       }
@@ -403,22 +393,33 @@ module.exports = {
       utilityFunc.sendErrorResponse(error, res);
     }
   },
+  getProfile: async (req, res) => {
+    try {
+      const data = req.body;
+            const validationData = await utilityFunc.validationData(req.body, [
+                "cryptoAdress", 
+            ]);
 
+
+
+      
+    } catch (error) {
+      console.log("error ==> ", error);
+      utilityFunc.sendErrorResponse(error, res);
+    }
+  },
   userKYC: async (req, res) => {
     try {
       let data = req.body; // Get the data from the body
-
-      if (!req.decode) {
-        return utilityFunc.sendErrorResponse("Invalid User", res);
-      }
-      if (!data.aadhaarNumber && !data.panNumber) {
-        return utilityFunc.sendErrorResponse(
-          "Please Enter Adhar Number or Pan Number",
-          res
-        );
+      let validationData = await utilityFunc.validationData(req.body, [
+        "userId",
+        "panNumber",
+      ]);
+      if (validationData && validationData.status) {
+        return utilityFunc.sendErrorResponse(validationData.error, res);
       }
       // Finding the user from userId
-      const userExist = await User.findOne({ _id: req.decode._id });
+      const userExist = await User.findOne({ _id: data.userId });
       if (userExist) {
         if (data.panNumber) {
           let panNumberJson = JSON.stringify({
@@ -430,8 +431,8 @@ module.exports = {
             method: "post",
             headers: {
               "Content-Type": "application/json",
-              secretKey: process.env.KYCSecretKey,
-              clientId: process.env.KYCClientId,
+              secretKey: env.KYCSecretKey,
+              clientId: env.KYCClientId,
             },
             data: panNumberJson,
           };
@@ -440,55 +441,52 @@ module.exports = {
 
           if (response.data.code == 100) {
             const update = await User.findOneAndUpdate(
-              { _id: req.decode._id },
+              { _id: data.userId },
               { $set: { kycDetail: response.data.result, isKYCDone: true } }
             );
+            console.log("🚀 ~ file: user.js:428 ~ userKYC: ~ update:", update);
           } else {
-            utilityFunc.sendErrorResponse("Verification Failed", response);
+            utilityFunc.sendErrorResponse("Verification Failed", response.data);
           }
 
           return utilityFunc.sendSuccessResponse(
             {
-              data: response.data,
               login: true,
             },
-            res
+            response.data
           );
         }
 
-        if (data.aadhaarNumber) {
-          let aadhaarNumberJson = JSON.stringify({
-            aadhaarNumber: `${data.aadhaarNumber}`,
-          });
-          const aadharRequestOtpUri = process.env.adharRequestOtpUri;
-
+        if (data.adharNumber) {
+          const adharRequestOtpUri = env.adharRequestOtpUri;
           const object = {
+            url: adharRequestOtpUri,
             method: "post",
-            url: aadharRequestOtpUri,
             headers: {
               "Content-Type": "application/json",
-              secretKey: process.env.KYCSecretKey,
-              clientId: process.env.KYCClientId,
+              secretKey: KYCSecretKey,
+              clientId: KYCClientId,
             },
-            data: aadhaarNumberJson,
+            data: data,
           };
+
           const response = await axios(object);
-          if (response.data.success) {
+          if (response.result.success) {
             await User.findOneAndUpdate(
-              { _id: req.decode._id },
+              { _id: data.userId },
               {
                 $set: {
                   kycOTP: response.data.otp,
                   adharClientId: response.data.client_id,
                 },
-              },
-              { new: true }
+              }
             );
+          } else {
+            utilityFunc.sendErrorResponse("Verification Failed", res);
           }
 
           return utilityFunc.sendSuccessResponse(
             {
-              data: response.data,
               login: true,
             },
             res
@@ -498,42 +496,45 @@ module.exports = {
         return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
       }
     } catch (error) {
-      console.log("error ==> ", error);
       return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
     }
   },
+
   adharSumitOtp: async (req, res) => {
     try {
       let data = req.body;
+      let validationData = await utilityFunc.validationData(req.body, [
+        "kycOTP",
+      ]);
+      if (validationData && validationData.status) {
+        return utilityFunc.sendErrorResponse(validationData.error, res);
+      }
+
       if (!data.otp && !data.clientId) {
         return utilityFunc.sendErrorResponse(
           "OTP and ClientId is required!",
           res
         );
       }
-
-      let aadhaarOtp = JSON.stringify({
-        client_id: `${data.client_id}`,
-        otp: `${data.otp}`,
-      });
-      const adharSumitOtpUri = process.env.adharSumitOtpUri;
+      const adharSumitOtpUri = env.adharSumitOtpUri;
       const object = {
         url: adharSumitOtpUri,
         method: "post",
         headers: {
           "Content-Type": "application/json",
-          secretKey: process.env.KYCSecretKey,
-          clientId: process.env.KYCClientId,
+          secretKey: KYCSecretKey,
+          clientId: KYCClientId,
         },
-        data: aadhaarOtp,
+        data: { client_id: data.client_id, otp: data.otp },
       };
       const response = await axios(object);
 
-      if (response.data.result.success) {
+      // res.send(response);
+
+      if (response.result.success) {
         await User.findOneAndUpdate(
-          { _id: req.decode._id },
-          { $set: { isKYCDone: true, kycDetail: response.result } },
-          { new: true }
+          { _id: data.userId },
+          { $set: { isKYCDone: true, kycDetail: response.result } }
         );
       } else {
         utilityFunc.sendErrorResponse("Verification Failed", res);
@@ -541,7 +542,6 @@ module.exports = {
 
       return utilityFunc.sendSuccessResponse(
         {
-          data: response.data,
           login: true,
         },
         res
@@ -551,40 +551,4 @@ module.exports = {
       console.log("Error ==>", error);
     }
   },
-  updateUserProfile: async (req, res) => {
-    const data = req.body;
-    const userExist = await User.findOne({ _id: req.decode._id });
-    if (userExist) {
-      await User.findOneAndUpdate(
-        { _id: req.decode._id },
-        {
-          $set: {
-            userDetails: {
-              userId: req.decode._id,
-              userName: data.userName,
-              nationality: data.nationality,
-              dateOfBirth: data.dateOfBirth,
-              fullAddress: data.fullAddress,
-              pinCode: data.pinCode,
-              city: data.city,
-              country: data.country,
-              aadharCardNo: data.aadharCardNo,
-              pancardNo: data.pancardNo,
-            },
-          },
-        },
-        { new: true }
-      );
-      return utilityFunc.sendSuccessResponse(
-        {
-          message: "UserName Updated",
-          exist: true,
-          data: data,
-        },
-        res
-      );
-    } else {
-      return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
-    }
-  },
-};
+}

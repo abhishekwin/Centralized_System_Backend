@@ -93,4 +93,41 @@ module.exports = {
       }
     } catch (error) {}
   },
+  AssetTransferFromHotWallet: async (req, res) => {
+    try {
+        const data = req.body;
+        const validationData = await utilityFunc.validationData(req.body, [
+            "toAddress",
+            "fromAddress",
+            "amount",
+        ]);
+
+        if (validationData && validationData.status) {
+            return utilityFunc.sendErrorResponse(validationData.errorMessage, res);
+        }
+
+        // check user wallet balance here from db ;
+        const userBalance = await utilityFunc.getUserByPublicAddress(
+            data.fromAddress
+        ).balance;
+
+        // let wallet = await utilityFunc.HotWalletAccess()
+        if (userBalance < data.amount) {
+            return utilityFunc.sendErrorResponse("User have noty suffiu", res);
+        }
+        const result = await utilityFunc.TransferFundsFromHotWallet(
+            data.toAddress,
+            data.amount
+        );
+        return result;
+        // console.log(result);
+
+        if (result) {
+            // update wallet balance of user
+        }
+        return result;
+    } catch (error) {
+        console.log(error);
+    }
+},
 };

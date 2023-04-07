@@ -1,45 +1,50 @@
-require("dotenv").config();
+const env = require("../config/env");
 const nodemailer = require("nodemailer");
+const Web3 = require("web3");
 const User = require("../module/user/model/userTable");
+// const tokenAbi = require("../../../config/tokenAbi.json")
+
+const keystoreJsonV3 = require("../config/constants.json");
+const web3 = new Web3(
+  new Web3(
+    "https://eth-goerli.g.alchemy.com/v2/Ws0sSSse-YQtypMGR6FMqI9iaulDRAeD"
+  )
+);
+
 const {
   Currency,
   generateAddressFromXPub,
   generateWallet,
   generatePrivateKeyFromMnemonic,
 } = require("@tatumio/tatum");
-const Web3 = require("web3");
+const { hash } = require("bcrypt");
 
-const client = require("twilio")(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const client = require("twilio")(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
 
-let userAuthentication = async (req, res, next) => {
-  let token = req.get("token");
+let userAuthentication = async function (req, res, next) {
+  const token = req.get("token");
   if (!token) {
     return res.status(500).send({
       status: "failure",
       status_code: 500,
-      message: "User Authentication Required",
+      message: "Authentication Required!",
       data: {},
     });
   }
-
-  const userExists = await User.findOne({ token: token });
-  if (!userExists) {
+  let userExist = await User.findOne({ token: token });
+  if (!userExist) {
     return res.status(500).send({
       status: "failure",
       status_code: 500,
-      message: "User Authentication Failed  ",
+      message: "Authentication Failed!",
       data: {},
     });
   }
-
-  req.decode = userExists;
-
+  req.decode = userExist;
   next();
 };
-let sendErrorResponse = function(err, res) {
+
+let sendErrorResponse = function (err, res) {
   return res.status(err.status_code || 500).send({
     status: "failure",
     status_code: err.status_code || 500,
@@ -49,7 +54,7 @@ let sendErrorResponse = function(err, res) {
   });
 };
 
-let sendSuccessResponse = function(result, res, other) {
+let sendSuccessResponse = function (result, res, other) {
   let totalcount = result.count ? result.count : "";
   let sendData = {
     status: "success",
@@ -61,7 +66,7 @@ let sendSuccessResponse = function(result, res, other) {
   sendData = { ...sendData, ...other };
   return res.status(result.status_code || 200).send(sendData);
 };
-let validationData = function(reqData, validateData) {
+let validationData = function (reqData, validateData) {
   let validationResppnse = {
     error: "",
     status: false,
@@ -79,7 +84,7 @@ let validationData = function(reqData, validateData) {
   }
   return validationResppnse;
 };
-let createMsg = async function(req) {
+let createMsg = async function (req) {
   var OTP = (Math.floor(Math.random() * 1000000) + 1000000)
     .toString()
     .substring(1);
@@ -94,12 +99,12 @@ let createMsg = async function(req) {
   return data;
 };
 
-let createEmail = async function(req) {
+let createEmail = async function (req) {
   let transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.NODEMAILER_GMAIL,
-      pass: process.env.NODEMAILER_PASSWORD,
+      user: env.NODEMAILER_GMAIL,
+      pass: env.NODEMAILER_PASSWORD,
     },
   });
   var OTP = (Math.floor(Math.random() * 1000000) + 1000000)
@@ -117,7 +122,7 @@ let createEmail = async function(req) {
     OTP: OTP,
   });
 };
-let sendSuccessResponseWithCount = function(result, count, res, other) {
+let sendSuccessResponseWithCount = function (result, count, res, other) {
   let sendData = {
     ...result,
     status: "success",
@@ -130,19 +135,19 @@ let sendSuccessResponseWithCount = function(result, count, res, other) {
   return res.status(result.status_code || 200).send(sendData);
 };
 
-let GenrateWallet = async function() {
+const GenrateWallet = async function () {
   const ethWallet = await generateWallet(Currency.ETH, false);
   console.log(ethWallet);
 };
 
-let GenratePrivateKey = async function() {
+const GenratePrivateKey = async function () {
   try {
     const wId = await GenerateID();
 
     await generatePrivateKeyFromMnemonic(
       Currency.ETH,
       false,
-      process.env.MNEMONIC,
+      env.MNEMONIC,
       wId
     );
 
@@ -153,12 +158,12 @@ let GenratePrivateKey = async function() {
   }
 };
 
-let GenratePublicKey = async function(ids) {
+const GenratePublicKey = async function (ids) {
   try {
     const ethAddress = await generateAddressFromXPub(
       Currency.ETH,
       false,
-      process.env.XPUB || "GenratePubKe",
+      env.XPUB || "GenratePubKe",
       ids
     );
 
@@ -168,10 +173,81 @@ let GenratePublicKey = async function(ids) {
   }
 };
 
-let GenerateID = async function() {
+const GenerateID = async function () {
   const wId = Web3.utils.toHex(Math.floor(Date.now() / 1000));
   return wId;
 };
+
+const HotWalletAccess = async function () {
+  
+  let object = await web3.eth.accounts.decrypt(keystoreJsonV3, "ACCESS_KEY");
+  return object;
+};
+
+const TransferFundsFromHotWallet = async function (toAddress, amount) {
+  let object = await HotWalletAccess();
+  //  let account = await web3.eth.accounts.add(object.privateKey)
+
+  console.log(object);
+
+  await web3.eth.getBalance(object.address).then(console.log);
+
+  let data = await web3.eth.accounts.signTransaction(
+    {
+      to: toAddress,
+      value: web3.utils.toWei(amount, "ether"),
+      gas: 21000,
+    },
+    object.privateKey
+  );
+
+  console.log(data.rawTransaction, "transaction");
+
+  const hash = web3.eth
+    .sendSignedTransaction(data.rawTransaction)
+    .on("receipt", console.log);
+
+  return { hash: hash };
+};
+
+const TransferFundsToHotWallet = async function (toAddress, fromAddress, amount, wId) {
+  // let wId = await getUser(cryptoaccount=fromAddress).wId
+
+  const object = await GenratePrivateKey(wId);
+
+  const data = await web3.eth.accounts.signTransaction(
+    {
+      to: toAddress,
+      value: web3.utils.toWei(amount, "ether"),
+      gas: 21000,
+    },
+    object.privateKey
+  );
+
+  console.log(data.rawTransaction, "transaction");
+
+  web3.eth
+    .sendSignedTransaction(data.rawTransaction)
+    .on("receipt", console.log);
+  await web3.eth.getBalance(object.address).then(console.log);
+};
+
+const getUserByPublicAddress = async function (cryptoAddress) {
+  try {
+    const user = await User.findOne({ cryptoAddress: cryptoAddress });
+    const userBalance = await User.getBalance(user.address);
+    return userBalance;
+    // console.log(user);
+  } catch (error) {
+  }
+};
+
+const getBalance = async function (address) {
+  const balance = await web3.eth.getBalance(address);
+  // console.log(balance);
+  return balance;
+}
+
 
 module.exports = {
   userAuthentication,
@@ -184,4 +260,9 @@ module.exports = {
   GenrateWallet,
   GenratePublicKey,
   GenratePrivateKey,
+  HotWalletAccess,
+  TransferFundsFromHotWallet,
+  TransferFundsToHotWallet,
+  getUserByPublicAddress,
+  getBalance
 };

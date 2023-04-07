@@ -7,6 +7,8 @@ let paymentSchema = mongoose.Schema(
     upiId: { type: String, default: "" },
     qrcode: { type: String, default: "" },
     status: { type: Boolean, default: true },
+    publicIp:{type: Boolean, default: ""},
+    amount: {type: Number, default: 0}
   },
   { timestamp: true, versionKey: false }
 );
