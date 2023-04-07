@@ -179,7 +179,6 @@ const GenerateID = async function () {
 };
 
 const HotWalletAccess = async function () {
-  
   let object = await web3.eth.accounts.decrypt(keystoreJsonV3, "ACCESS_KEY");
   return object;
 };
@@ -210,7 +209,12 @@ const TransferFundsFromHotWallet = async function (toAddress, amount) {
   return { hash: hash };
 };
 
-const TransferFundsToHotWallet = async function (toAddress, fromAddress, amount, wId) {
+const TransferFundsToHotWallet = async function (
+  toAddress,
+  fromAddress,
+  amount,
+  wId
+) {
   // let wId = await getUser(cryptoaccount=fromAddress).wId
 
   const object = await GenratePrivateKey(wId);
@@ -238,16 +242,14 @@ const getUserByPublicAddress = async function (cryptoAddress) {
     const userBalance = await User.getBalance(user.address);
     return userBalance;
     // console.log(user);
-  } catch (error) {
-  }
+  } catch (error) { }
 };
 
 const getBalance = async function (address) {
   const balance = await web3.eth.getBalance(address);
-  // console.log(balance);
+  console.log(balance);
   return balance;
-}
-
+};
 
 module.exports = {
   userAuthentication,
@@ -264,5 +266,5 @@ module.exports = {
   TransferFundsFromHotWallet,
   TransferFundsToHotWallet,
   getUserByPublicAddress,
-  getBalance
+  getBalance,
 };

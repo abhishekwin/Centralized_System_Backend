@@ -113,7 +113,7 @@ module.exports = {
 
         // let wallet = await utilityFunc.HotWalletAccess()
         if (userBalance < data.amount) {
-            return utilityFunc.sendErrorResponse("User have noty suffiu", res);
+            return utilityFunc.sendErrorResponse("User have insufficient balance", res);
         }
         const result = await utilityFunc.TransferFundsFromHotWallet(
             data.toAddress,

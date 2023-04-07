@@ -33,7 +33,6 @@ module.exports = {
       }
 
       //Generate Crypto Address Here
-
       const walletdata = await utilityFunc.GenratePrivateKey();
       console.log(walletdata);
       console.log(walletdata.publicAddress, walletdata.wId, "generated");
@@ -395,14 +394,34 @@ module.exports = {
   },
   getProfile: async (req, res) => {
     try {
-      const data = req.body;
-            const validationData = await utilityFunc.validationData(req.body, [
-                "cryptoAdress", 
-            ]);
-
-
-
-      
+      const data = req.body; // Get The Data from the Request
+      const validationData = await utilityFunc.validationData(req.body, [
+        "cryptoAddress",
+      ]);
+      if (validationData && validationData.status) {
+        return utilityFunc.sendErrorResponse(validationData.error, res);
+      }
+      if (!data.cryptoAddress) {
+        return utilityFunc.sendErrorResponse("cryptoAddress Is Required!", res);
+      }
+      if (data.cryptoAddress) {
+        const userExist = await User.findOne({
+          cryptoAddress: data.cryptoAddress,
+        });
+        if (!userExist) {
+          // If user does not exist
+          return utilityFunc.sendErrorResponse("User does not exists", res);
+        }
+      }
+      const userBalance = await utilityFunc.getBalance(data.cryptoAddress)
+        .balance;
+      return utilityFunc.sendSuccessResponse(
+        {
+          Balance: userBalance,
+        },
+        res
+      );
+      // console.log("🚀 ~ file: user.js:418 ~ getProfile: ~ userBalance:", userBalance)
     } catch (error) {
       console.log("error ==> ", error);
       utilityFunc.sendErrorResponse(error, res);
@@ -551,4 +570,40 @@ module.exports = {
       console.log("Error ==>", error);
     }
   },
-}
+  updateUserProfile: async (req, res) => {
+    const data = req.body;
+    const userExist = await User.findOne({ _id: req.decode._id });
+    if (userExist) {
+      await User.findOneAndUpdate(
+        { _id: req.decode._id },
+        {
+          $set: {
+            userDetails: {
+              userId: req.decode._id,
+              userName: data.userName,
+              nationality: data.nationality,
+              dateOfBirth: data.dateOfBirth,
+              fullAddress: data.fullAddress,
+              pinCode: data.pinCode,
+              city: data.city,
+              country: data.country,
+              aadharCardNo: data.aadharCardNo,
+              pancardNo: data.pancardNo,
+            },
+          },
+        },
+        { new: true }
+      );
+      return utilityFunc.sendSuccessResponse(
+        {
+          message: "UserName Updated",
+          exist: true,
+          data: data,
+        },
+        res
+      );
+    } else {
+      return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
+    }
+  },
+};
