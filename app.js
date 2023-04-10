@@ -91,7 +91,7 @@ if (NODE_ENV === "production") {
 }
 
 //****Database connection mongodb using mongoose */
-const mongoAtlasUri = env.mongoAtlasUri;
+const mongoAtlasUri = process.env.mongoAtlasUri;
 mongoose.connect(mongoAtlasUri, { useNewUrlParser: true });
 mongoose.Promise = global.Promise;
 let db = mongoose.connection;
