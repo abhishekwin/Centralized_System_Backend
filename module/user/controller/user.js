@@ -32,19 +32,20 @@ module.exports = {
         );
       }
 
-      //Generate Crypto Address Here
-      const walletdata = await utilityFunc.GenratePrivateKey();
-      console.log(walletdata);
-      console.log(walletdata.publicAddress, walletdata.wId, "generated");
-
       if (data.phoneNumber) {
         userExist = await User.findOne({ phoneNumber: data.phoneNumber });
         if (userExist) {
           return utilityFunc.sendSuccessResponse(
-            { login: false, exist: true, password: true, user: userExist },
+            {data: { login: false, exist: true, password: true, user: userExist }},
             res
           );
         } else {
+
+          //Generate Crypto Address Here
+          const walletdata = await utilityFunc.GenratePrivateKey();
+          console.log(walletdata);
+          console.log(walletdata.publicAddress, walletdata.wId, "generated");
+
           let OTPData = await utilityFunc.createMsg(req);
           if (OTPData && OTPData.body) {
             var numb = OTPData.body.match(/\d/g);
@@ -55,7 +56,7 @@ module.exports = {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.phoneNumber,
               },
-              env.JWT_SECRET
+              process.env.JWT_SECRET
             );
 
             // Hash password
@@ -92,6 +93,11 @@ module.exports = {
             res
           );
         } else {
+          //Generate Crypto Address Here
+          const walletdata = await utilityFunc.GenratePrivateKey();
+          console.log(walletdata);
+          console.log(walletdata.publicAddress, walletdata.wId, "generated");
+          
           let OTPData = await utilityFunc.createEmail(req);
           if (OTPData && OTPData.OTP) {
             let token = await jwt.sign(
@@ -99,7 +105,7 @@ module.exports = {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.email,
               },
-              env.JWT_SECRET
+              process.env.JWT_SECRET
             );
             // Hash Password
             const salt = await bcrypt.genSalt(10);
@@ -204,15 +210,15 @@ module.exports = {
     }
     if (data.phoneNumber) {
       userExist = await User.findOne({ phoneNumber: data.phoneNumber });
+      console.log("userExist",userExist)
       if (userExist) {
         return utilityFunc.sendSuccessResponse(
           { login: false, exist: true, password: true, user: userExist },
           res
         );
       } else {
-        return utilityFunc.sendSuccessResponse(
-          { login: false, exist: false, password: true },
-          res
+        return utilityFunc.sendSuccessResponse({},res,
+          { login: false, exist: false, password: true }
         );
       }
     }
@@ -332,7 +338,7 @@ module.exports = {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.phoneNumber,
               },
-              env.JWT_SECRET
+              process.env.JWT_SECRET
             );
 
             // Update the token in DB
@@ -369,7 +375,7 @@ module.exports = {
                 exp: Math.floor(Date.now() / 1000) + 60 * 60,
                 data: data.email,
               },
-              env.JWT_SECRET
+              process.env.JWT_SECRET
             );
 
             // Update the token in DB
@@ -395,32 +401,18 @@ module.exports = {
   getProfile: async (req, res) => {
     try {
       const data = req.body; // Get The Data from the Request
-      const validationData = await utilityFunc.validationData(req.body, [
-        "cryptoAddress",
-      ]);
-      if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, res);
-      }
-      if (!data.cryptoAddress) {
-        return utilityFunc.sendErrorResponse("cryptoAddress Is Required!", res);
-      }
-      if (data.cryptoAddress) {
-        const userExist = await User.findOne({
-          cryptoAddress: data.cryptoAddress,
-        });
-        if (!userExist) {
-          // If user does not exist
-          return utilityFunc.sendErrorResponse("User does not exists", res);
+        if(data.decode.cryptoAddress){
+        return utilityFunc.sendErrorResponse("cryptoAddress invalid!", res);
         }
-      }
-      const userBalance = await utilityFunc.getBalance(data.cryptoAddress)
-        .balance;
-      return utilityFunc.sendSuccessResponse(
-        {
-          Balance: userBalance,
-        },
-        res
-      );
+      const userBalance = await utilityFunc.getBalance(data.decode.cryptoAddress).balance;
+        console.log("🚀 ~ file: user.js:420 ~ getProfile: ~ userBalance:", userBalance)
+        
+      // return utilityFunc.sendSuccessResponse(
+      //   {
+      //     Balance: userBalance,
+      //   },
+      //   res
+      // );
       // console.log("🚀 ~ file: user.js:418 ~ getProfile: ~ userBalance:", userBalance)
     } catch (error) {
       console.log("error ==> ", error);
@@ -450,8 +442,8 @@ module.exports = {
             method: "post",
             headers: {
               "Content-Type": "application/json",
-              secretKey: env.KYCSecretKey,
-              clientId: env.KYCClientId,
+              secretKey: process.env.KYCSecretKey,
+              clientId: process.env.KYCClientId,
             },
             data: panNumberJson,
           };
@@ -477,7 +469,7 @@ module.exports = {
         }
 
         if (data.adharNumber) {
-          const adharRequestOtpUri = env.adharRequestOtpUri;
+          const adharRequestOtpUri = process.env.adharRequestOtpUri;
           const object = {
             url: adharRequestOtpUri,
             method: "post",
@@ -535,7 +527,7 @@ module.exports = {
           res
         );
       }
-      const adharSumitOtpUri = env.adharSumitOtpUri;
+      const adharSumitOtpUri = process.env.adharSumitOtpUri;
       const object = {
         url: adharSumitOtpUri,
         method: "post",

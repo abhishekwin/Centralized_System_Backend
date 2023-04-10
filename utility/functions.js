@@ -19,7 +19,7 @@ const {
 } = require("@tatumio/tatum");
 const { hash } = require("bcrypt");
 
-const client = require("twilio")(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
+const client = require("twilio")(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 let userAuthentication = async function (req, res, next) {
   const token = req.get("token");
@@ -103,8 +103,8 @@ let createEmail = async function (req) {
   let transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: env.NODEMAILER_GMAIL,
-      pass: env.NODEMAILER_PASSWORD,
+      user: process.env.NODEMAILER_GMAIL,
+      pass: process.env.NODEMAILER_PASSWORD,
     },
   });
   var OTP = (Math.floor(Math.random() * 1000000) + 1000000)
@@ -143,15 +143,20 @@ const GenrateWallet = async function () {
 const GenratePrivateKey = async function () {
   try {
     const wId = await GenerateID();
+    
+    console.log("🚀 ~ file: functions.js:162 ~ GenratePrivateKey ~ process.env.MNEMONIC:", process.env.MNEMONIC)
 
-    await generatePrivateKeyFromMnemonic(
+   const resultData = await generatePrivateKeyFromMnemonic(
       Currency.ETH,
       false,
-      env.MNEMONIC,
+      process.env.MNEMONIC,
       wId
     );
+    console.log("🚀 ~ file: functions.js:162 ~ GenratePrivateKey ~ resultData:", resultData)
 
     const publicAddress = await GenratePublicKey(wId);
+    console.log("🚀 ~ file: functions.js:155 ~ GenratePrivateKey ~ publicAddress:", publicAddress)
+    
     return { publicAddress, wId };
   } catch (error) {
     console.log(error.message);
@@ -163,7 +168,7 @@ const GenratePublicKey = async function (ids) {
     const ethAddress = await generateAddressFromXPub(
       Currency.ETH,
       false,
-      env.XPUB || "GenratePubKe",
+      process.env.XPUB || "GenratePubKe",
       ids
     );
 
@@ -174,7 +179,11 @@ const GenratePublicKey = async function (ids) {
 };
 
 const GenerateID = async function () {
+  console.log("🚀 ~ file: functions.js:178 ~ GenerateID ~ wId:wId")
+
   const wId = Web3.utils.toHex(Math.floor(Date.now() / 1000));
+  console.log("🚀 ~ file: functions.js:178 ~ GenerateID ~ wId:", wId)
+  
   return wId;
 };
 
