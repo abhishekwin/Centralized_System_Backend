@@ -601,9 +601,12 @@ module.exports = {
 
         }
         else {
+          let OTP = await utilityFunc.createEmail(req);
+          console.log("🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:", OTP);
+          
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { email: data.email } }
+            { $set: { email: data.email, OTP : OTP, isEmailVerified : false } }
           );
           return utilityFunc.sendSuccessResponse({
             message: "Email Updated",
@@ -618,9 +621,12 @@ module.exports = {
             message: "Phone Number Already exists"
           }, res);
         } else {
+
+          let OTP = await utilityFunc.createMsg(data.phoneNumber);
+          console.log("🚀 ~ file: user.js:626 ~ updateEmailPhone: ~ OTP:", OTP);
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { phoneNumber: data.phoneNumber } }
+            { $set: { phoneNumber: data.phoneNumber, OTP : OTP, isPhoneVerified : false } }
           );
           return utilityFunc.sendSuccessResponse({
             message: "Phone Number Updated",
@@ -642,5 +648,108 @@ module.exports = {
     }
 
 
+  },
+  forgotPassword : async (req,res) =>{
+    try {
+      let data = req.body;
+      console.log("🚀 ~ file: user.js:655 ~ forgotPassword: ~ data:", data)
+      if(!data.email && !data.phoneNumber){
+       return utilityFunc.sendErrorResponse({
+         message : "Please Enter Email or Phone Number!"
+       },res);
+      }
+      if(data.email){
+       let emailExist = await User.find({email : req.body.email});
+       if(emailExist.length > 0){
+ 
+         let OTP = await utilityFunc.createEmail(req);
+         console.log("🚀 ~ file: user.js:668 ~ forgotPassword: ~ OTP:", OTP)
+         if(data.NewPassword === data.confirmPassword){
+
+          const salt = await bcrypt.genSalt(10);
+          const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
+           await User.findOneAndUpdate(
+             { email : data.email},
+             { $set : {password : hashedPassword, isEmailVerified : false, OTP : OTP.OTP}}
+             );
+             return utilityFunc.sendSuccessResponse({
+               message : "Password Updated",
+               success : true
+             },res);
+         }
+         else{
+           return utilityFunc.sendErrorResponse({
+             message : "Password doesn't match!"
+           },res);
+         }
+        
+       }
+       else{
+         return utilityFunc.sendErrorResponse({
+           message : "Email Doesn't Exists!"
+         },res);
+       }
+      }
+      else{
+         if(data.phoneNumber){
+           let phoneNumberExist = await User.find({phoneNumber : req.body.phoneNumber});
+           if(phoneNumberExist.length > 0){
+              let OTP = await utilityFunc.createMsg(req);
+            
+              if(data.NewPassword == data.confirmPassword){
+                const salt = await bcrypt.genSalt(10);
+                const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
+               await User.findOneAndUpdate(
+                 {_id : req.decode._id},
+                 {$set  :{password : hashedPassword, OTP : OTP, isPhoneVerified : false}}
+                 );
+                 return utilityFunc.sendSuccessResponse({
+                   message : "Password Updated",
+                   success : true
+                 },res);
+              }
+              else{
+                 return utilityFunc.sendErrorResponse({
+                   message : "Password Doesn't Match!"
+                 },res);
+              }
+              
+           }
+         }
+      }
+    } catch (error) {
+      console.log("error",error);
+      return utilityFunc.sendErrorResponse({error},res);
+    }
+  },
+  changePassword : async (req,res) =>{
+    try {
+      let data = req.body;
+      let pas̵swordExist = await User.findOne({_id : req.decode._id});
+      console.log("🚀 ~ file: user.js:725 ~ changePassword: ~ pas̵swordExist:", pas̵swordExist);
+
+      let passcheck = await bcrypt.compare(
+        data.oldPassword,
+        pas̵swordExist.password
+      )
+
+      if(passcheck){
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
+        await User.findOneAndUpdate(
+          {_id : req.decode._id},
+          { $set : {password : hashedPassword}}
+        );
+        return utilityFunc.sendSuccessResponse({
+          message : "Password Changed",
+          success : true
+        },res)
+      }
+      else{
+        return utilityFunc.sendErrorResponse({ message : "Wrong Password!"},res);
+      }
+    } catch (error) {
+      return utilityFunc.sendErrorResponse({error},res);
+    }
   }
 };

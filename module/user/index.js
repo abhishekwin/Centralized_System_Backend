@@ -16,5 +16,7 @@ router.post('/verifyKYC', userAuthentication,userController.adharSumitOtp);
 
 router.post('/updateUser',userAuthentication, userController.updateUserProfile);
 router.post('/updateEmailPhone',userAuthentication, userController.updateEmailPhone);
+router.post('/forgotPassword', userController.forgotPassword);
+router.post('/changePassword',userAuthentication, userController.changePassword);
 
 module.exports = router;
