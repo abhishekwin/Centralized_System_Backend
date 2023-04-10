@@ -26,7 +26,10 @@
     "nodemon": "^2.0.22",
     "path": "^0.12.7",
     "sticky-session": "^1.1.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^4.6.2",
     "twilio": "^4.9.0",
-    "web3": "^1.9.0"
+    "web3": "^1.9.0",
+    "yaml": "^2.2.1"
   }
 }
