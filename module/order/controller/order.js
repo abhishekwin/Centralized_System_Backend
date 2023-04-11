@@ -1,18 +1,22 @@
-const BuyOrder  = require('../model/buyOrderTable');
-const SellOrder  = require('../model/sellOrderTable');
-
+const BuyOrder = require("../model/buyOrderTable");
+const SellOrder = require("../model/sellOrderTable");
 
 module.exports = {
-     getBuyOrder: async(req,resp)=>{
-
-     },
-     getSellOrder: async(req,resp)=>{
-        
-     },
-     postBuyOrder: async(req,resp)=>{
-
-     },
-     postSellOrder: async(req,resp)=>{
-        
-     }
-}
+  getBuyOrder: async (req, resp) => {
+    try {
+    } catch (err) {}
+  },
+  getSellOrder: async (req, resp) => {
+    try {
+    } catch (err) {}
+  },
+  postBuyOrder: async (req, resp) => {
+    try {
+     
+    } catch (err) {}
+  },
+  postSellOrder: async (req, resp) => {
+    try {
+    } catch (err) {}
+  },
+};
