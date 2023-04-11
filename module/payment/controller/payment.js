@@ -1,7 +1,6 @@
 const Payment = require("../model/paymentTable");
 const utilityFunc = require("../../../utility/functions");
 const jwt = require("jsonwebtoken");
-const env = require("../../../config/env");
 const bcrypt = require("bcrypt");
 const axios = require("axios");
 const User = require("../../user/model/userTable");

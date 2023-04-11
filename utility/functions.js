@@ -1,14 +1,12 @@
-const env = require("../config/env");
 const nodemailer = require("nodemailer");
 const Web3 = require("web3");
 const User = require("../module/user/model/userTable");
+require("dotenv").config();
 // const tokenAbi = require("../../../config/tokenAbi.json")
 
 const keystoreJsonV3 = require("../config/constants.json");
 const web3 = new Web3(
-  new Web3(
-    "https://eth-goerli.g.alchemy.com/v2/Ws0sSSse-YQtypMGR6FMqI9iaulDRAeD"
-  )
+  new Web3(`https://eth-goerli.g.alchemy.com/v2/${process.env.ALCHEMY_RPC_KEY}`)
 );
 
 const {
@@ -17,7 +15,6 @@ const {
   generateWallet,
   generatePrivateKeyFromMnemonic,
 } = require("@tatumio/tatum");
-const { hash } = require("bcrypt");
 
 const client = require("twilio")(
   process.env.TWILIO_ACCOUNT_SID,

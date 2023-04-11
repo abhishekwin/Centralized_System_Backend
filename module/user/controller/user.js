@@ -1,7 +1,6 @@
 const User = require("../../user/model/userTable");
 const utilityFunc = require("../../../utility/functions");
 var jwt = require("jsonwebtoken");
-const env = require("../../../config/env");
 const bcrypt = require("bcrypt");
 const axios = require("axios");
 
@@ -36,11 +35,17 @@ module.exports = {
         userExist = await User.findOne({ phoneNumber: data.phoneNumber });
         if (userExist) {
           return utilityFunc.sendSuccessResponse(
-            {data: { login: false, exist: true, password: true, user: userExist }},
+            {
+              data: {
+                login: false,
+                exist: true,
+                password: true,
+                user: userExist,
+              },
+            },
             res
           );
         } else {
-
           //Generate Crypto Address Here
           const walletdata = await utilityFunc.GenratePrivateKey();
           console.log(walletdata);
@@ -73,11 +78,13 @@ module.exports = {
 
             return utilityFunc.sendSuccessResponse(
               {
-                login: true,
-                exist: true,
-                password: true,
-                otp: false,
-                user: userNew,
+                data: {
+                  login: true,
+                  exist: true,
+                  password: true,
+                  otp: false,
+                  user: userNew,
+                },
               },
               res
             );
@@ -88,7 +95,14 @@ module.exports = {
         userExist = await User.findOne({ email: data.email });
         if (userExist) {
           return utilityFunc.sendSuccessResponse(
-            { login: false, exist: true, password: true, user: userExist },
+            {
+              data: {
+                login: false,
+                exist: true,
+                password: true,
+                user: userExist,
+              },
+            },
             res
           );
         } else {
@@ -96,7 +110,7 @@ module.exports = {
           const walletdata = await utilityFunc.GenratePrivateKey();
           console.log(walletdata);
           console.log(walletdata.publicAddress, walletdata.wId, "generated");
-          
+
           let OTPData = await utilityFunc.createEmail(req);
           if (OTPData && OTPData.OTP) {
             let token = await jwt.sign(
@@ -124,11 +138,13 @@ module.exports = {
             });
             return utilityFunc.sendSuccessResponse(
               {
-                login: true,
-                exist: true,
-                password: true,
-                otp: false,
-                user: userNew,
+                data: {
+                  login: true,
+                  exist: true,
+                  password: true,
+                  otp: false,
+                  user: userNew,
+                },
               },
               res
             );
@@ -150,7 +166,6 @@ module.exports = {
     ) {
       return utilityFunc.sendErrorResponse("Fields Is Required!", res);
     }
-    req.body.criptoAddress = "";
     let userExist = null;
     if ((data.googleId && data.email) || (data.facebookId && data.email)) {
       userExist = await User.findOne({
@@ -175,10 +190,12 @@ module.exports = {
         return utilityFunc.sendSuccessResponse(
           {
             message: "Login Success",
-            login: true,
-            exist: true,
-            token: token,
-            user: userExist,
+            data: {
+              login: true,
+              exist: true,
+              token: token,
+              user: userExist,
+            },
           },
           res
         );
@@ -198,10 +215,12 @@ module.exports = {
         return utilityFunc.sendSuccessResponse(
           {
             message: "Login Success",
-            login: true,
-            exist: true,
-            token: token,
-            user: newUser,
+            data: {
+              login: true,
+              exist: true,
+              token: token,
+              user: newUser,
+            },
           },
           res
         );
@@ -209,16 +228,18 @@ module.exports = {
     }
     if (data.phoneNumber) {
       userExist = await User.findOne({ phoneNumber: data.phoneNumber });
-      console.log("userExist",userExist)
+      console.log("userExist", userExist);
       if (userExist) {
         return utilityFunc.sendSuccessResponse(
           { login: false, exist: true, password: true, user: userExist },
           res
         );
       } else {
-        return utilityFunc.sendSuccessResponse({},res,
-          { login: false, exist: false, password: true }
-        );
+        return utilityFunc.sendSuccessResponse({}, res, {
+          login: false,
+          exist: false,
+          password: true,
+        });
       }
     }
     if (data.email && !data.googleId && !data.facebookId) {
@@ -265,10 +286,12 @@ module.exports = {
           return utilityFunc.sendSuccessResponse(
             {
               message: "Account Verified !",
-              login: true,
-              exist: true,
-              token: userFound.token,
-              user: userFound,
+              data: {
+                login: true,
+                exist: true,
+                token: userFound.token,
+                user: userFound,
+              },
             },
             res
           );
@@ -289,10 +312,12 @@ module.exports = {
           return utilityFunc.sendSuccessResponse(
             {
               message: "Account Verified !",
-              login: true,
-              exist: true,
-              token: userFound.token,
-              user: userFound,
+              data: {
+                login: true,
+                exist: true,
+                token: userFound.token,
+                user: userFound,
+              },
             },
             res
           );
@@ -347,11 +372,13 @@ module.exports = {
               { new: true }
             );
             return utilityFunc.sendSuccessResponse({
-              login: true,
-              exist: true,
-              password: true,
-              updatedToken: newToken,
-              user: newUser,
+              data: {
+                login: true,
+                exist: true,
+                password: true,
+                updatedToken: newToken,
+                user: newUser,
+              },
             });
           } else {
             return utilityFunc.sendErrorResponse("Invalid password!", res);
@@ -383,11 +410,13 @@ module.exports = {
               { $set: { token: newToken } }
             );
             return utilityFunc.sendSuccessResponse({
-              login: true,
-              exist: true,
-              password: true,
-              updatedToken: newToken,
-              user: newUser,
+              data: {
+                login: true,
+                exist: true,
+                password: true,
+                updatedToken: newToken,
+                user: newUser,
+              },
             });
           }
         }
@@ -399,20 +428,20 @@ module.exports = {
   },
   getProfile: async (req, res) => {
     try {
-      const data = req.body; // Get The Data from the Request
-        if(data.decode.cryptoAddress){
-        return utilityFunc.sendErrorResponse("cryptoAddress invalid!", res);
-        }
-      const userBalance = await utilityFunc.getBalance(data.decode.cryptoAddress).balance;
-        console.log("🚀 ~ file: user.js:420 ~ getProfile: ~ userBalance:", userBalance)
-        
-      // return utilityFunc.sendSuccessResponse(
-      //   {
-      //     Balance: userBalance,
-      //   },
-      //   res
-      // );
-      // console.log("🚀 ~ file: user.js:418 ~ getProfile: ~ userBalance:", userBalance)
+      const data = req.decode; // Get The Data from the Request
+      if (data.cryptoAddress === null || data.cryptoAddress === "") {
+        return utilityFunc.sendErrorResponse("CryptoAddress Invalid!", res);
+      }
+      const userBalance = await utilityFunc.getBalance(data.cryptoAddress);
+
+      return utilityFunc.sendSuccessResponse(
+        {
+          data: {
+            balance: userBalance,
+          },
+        },
+        res
+      );
     } catch (error) {
       console.log("error ==> ", error);
       utilityFunc.sendErrorResponse(error, res);
@@ -597,170 +626,223 @@ module.exports = {
     }
   },
   updateEmailPhone: async (req, res) => {
-
     try {
       let data = req.body;
       if (!data.email && !data.phoneNumber) {
-        return utilityFunc.sendErrorResponse("Please Enter Email or Phone", res);
+        return utilityFunc.sendErrorResponse(
+          "Please Enter Email or Phone",
+          res
+        );
       }
       if (data.email) {
         let emailExist = await User.find({ email: req.body.email });
         if (emailExist.length > 0) {
-          return utilityFunc.sendErrorResponse({
-            message: "Email Already Exist"
-          }, res);
-
-        }
-        else {
+          return utilityFunc.sendErrorResponse(
+            {
+              message: "Email Already Exist",
+            },
+            res
+          );
+        } else {
           let OTP = await utilityFunc.createEmail(req);
           console.log("🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:", OTP);
-          
+
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { email: data.email, OTP : OTP, isEmailVerified : false } }
+            { $set: { email: data.email, OTP: OTP, isEmailVerified: false } }
           );
-          return utilityFunc.sendSuccessResponse({
-            message: "Email Updated",
-            success: true
-          }, res);
-
+          return utilityFunc.sendSuccessResponse(
+            {
+              message: "Email Updated",
+              success: true,
+            },
+            res
+          );
         }
       } else if (data.phoneNumber) {
-        let phoneNumberExist = await User.find({ phoneNumber: req.body.phoneNumber });
+        let phoneNumberExist = await User.find({
+          phoneNumber: req.body.phoneNumber,
+        });
         if (phoneNumberExist.length > 0) {
-          return utilityFunc.sendErrorResponse({
-            message: "Phone Number Already exists"
-          }, res);
+          return utilityFunc.sendErrorResponse(
+            {
+              message: "Phone Number Already exists",
+            },
+            res
+          );
         } else {
-
           let OTP = await utilityFunc.createMsg(data.phoneNumber);
           console.log("🚀 ~ file: user.js:626 ~ updateEmailPhone: ~ OTP:", OTP);
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { phoneNumber: data.phoneNumber, OTP : OTP, isPhoneVerified : false } }
+            {
+              $set: {
+                phoneNumber: data.phoneNumber,
+                OTP: OTP,
+                isPhoneVerified: false,
+              },
+            }
           );
-          return utilityFunc.sendSuccessResponse({
-            message: "Phone Number Updated",
-            success: true
-          }, res);
+          return utilityFunc.sendSuccessResponse(
+            {
+              message: "Phone Number Updated",
+              success: true,
+            },
+            res
+          );
         }
       } else {
-        return utilityFunc.sendErrorResponse({
-          message: "Failed to Update Email or Phone"
-        }, res);
-
+        return utilityFunc.sendErrorResponse(
+          {
+            message: "Failed to Update Email or Phone",
+          },
+          res
+        );
       }
     } catch (error) {
-      console.log("🚀 ~ file: user.js:636 ~ updateEmailPhone: ~ error:", error)
+      console.log("🚀 ~ file: user.js:636 ~ updateEmailPhone: ~ error:", error);
 
-      return utilityFunc.sendErrorResponse({
-        message: "Phone Number Already exists"
-      }, res);
+      return utilityFunc.sendErrorResponse(
+        {
+          message: "Phone Number Already exists",
+        },
+        res
+      );
     }
-
-
   },
-  forgotPassword : async (req,res) =>{
+  forgotPassword: async (req, res) => {
     try {
       let data = req.body;
-      console.log("🚀 ~ file: user.js:655 ~ forgotPassword: ~ data:", data)
-      if(!data.email && !data.phoneNumber){
-       return utilityFunc.sendErrorResponse({
-         message : "Please Enter Email or Phone Number!"
-       },res);
+      console.log("🚀 ~ file: user.js:655 ~ forgotPassword: ~ data:", data);
+      if (!data.email && !data.phoneNumber) {
+        return utilityFunc.sendErrorResponse(
+          {
+            message: "Please Enter Email or Phone Number!",
+          },
+          res
+        );
       }
-      if(data.email){
-       let emailExist = await User.find({email : req.body.email});
-       if(emailExist.length > 0){
- 
-         let OTP = await utilityFunc.createEmail(req);
-         console.log("🚀 ~ file: user.js:668 ~ forgotPassword: ~ OTP:", OTP)
-         if(data.NewPassword === data.confirmPassword){
+      if (data.email) {
+        let emailExist = await User.find({ email: req.body.email });
+        if (emailExist.length > 0) {
+          let OTP = await utilityFunc.createEmail(req);
+          console.log("🚀 ~ file: user.js:668 ~ forgotPassword: ~ OTP:", OTP);
+          if (data.NewPassword === data.confirmPassword) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
+            await User.findOneAndUpdate(
+              { email: data.email },
+              {
+                $set: {
+                  password: hashedPassword,
+                  isEmailVerified: false,
+                  OTP: OTP.OTP,
+                },
+              }
+            );
+            return utilityFunc.sendSuccessResponse(
+              {
+                message: "Password Updated",
+                success: true,
+              },
+              res
+            );
+          } else {
+            return utilityFunc.sendErrorResponse(
+              {
+                message: "Password doesn't match!",
+              },
+              res
+            );
+          }
+        } else {
+          return utilityFunc.sendErrorResponse(
+            {
+              message: "Email Doesn't Exists!",
+            },
+            res
+          );
+        }
+      } else {
+        if (data.phoneNumber) {
+          let phoneNumberExist = await User.find({
+            phoneNumber: req.body.phoneNumber,
+          });
+          if (phoneNumberExist.length > 0) {
+            let OTP = await utilityFunc.createMsg(req);
 
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
-           await User.findOneAndUpdate(
-             { email : data.email},
-             { $set : {password : hashedPassword, isEmailVerified : false, OTP : OTP.OTP}}
-             );
-             return utilityFunc.sendSuccessResponse({
-               message : "Password Updated",
-               success : true
-             },res);
-         }
-         else{
-           return utilityFunc.sendErrorResponse({
-             message : "Password doesn't match!"
-           },res);
-         }
-        
-       }
-       else{
-         return utilityFunc.sendErrorResponse({
-           message : "Email Doesn't Exists!"
-         },res);
-       }
-      }
-      else{
-         if(data.phoneNumber){
-           let phoneNumberExist = await User.find({phoneNumber : req.body.phoneNumber});
-           if(phoneNumberExist.length > 0){
-              let OTP = await utilityFunc.createMsg(req);
-            
-              if(data.NewPassword == data.confirmPassword){
-                const salt = await bcrypt.genSalt(10);
-                const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
-               await User.findOneAndUpdate(
-                 {_id : req.decode._id},
-                 {$set  :{password : hashedPassword, OTP : OTP, isPhoneVerified : false}}
-                 );
-                 return utilityFunc.sendSuccessResponse({
-                   message : "Password Updated",
-                   success : true
-                 },res);
-              }
-              else{
-                 return utilityFunc.sendErrorResponse({
-                   message : "Password Doesn't Match!"
-                 },res);
-              }
-              
-           }
-         }
+            if (data.NewPassword == data.confirmPassword) {
+              const salt = await bcrypt.genSalt(10);
+              const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
+              await User.findOneAndUpdate(
+                { _id: req.decode._id },
+                {
+                  $set: {
+                    password: hashedPassword,
+                    OTP: OTP,
+                    isPhoneVerified: false,
+                  },
+                }
+              );
+              return utilityFunc.sendSuccessResponse(
+                {
+                  message: "Password Updated",
+                  data:{
+                    success: true
+                  },
+                 
+                },
+                res
+              );
+            } else {
+              return utilityFunc.sendErrorResponse(
+                {
+                  message: "Password Doesn't Match!",
+                },
+                res
+              );
+            }
+          }
+        }
       }
     } catch (error) {
-      console.log("error",error);
-      return utilityFunc.sendErrorResponse({error},res);
+      console.log("error", error);
+      return utilityFunc.sendErrorResponse({ error }, res);
     }
   },
-  changePassword : async (req,res) =>{
+  changePassword: async (req, res) => {
     try {
       let data = req.body;
-      let pas̵swordExist = await User.findOne({_id : req.decode._id});
-      console.log("🚀 ~ file: user.js:725 ~ changePassword: ~ pas̵swordExist:", pas̵swordExist);
-
+      let pas̵swordExist = await User.findOne({ _id: req.decode._id });
       let passcheck = await bcrypt.compare(
         data.oldPassword,
         pas̵swordExist.password
-      )
+      );
 
-      if(passcheck){
+      if (passcheck) {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(data.NewPassword, salt);
         await User.findOneAndUpdate(
-          {_id : req.decode._id},
-          { $set : {password : hashedPassword}}
+          { _id: req.decode._id },
+          { $set: { password: hashedPassword } }
         );
-        return utilityFunc.sendSuccessResponse({
-          message : "Password Changed",
-          success : true
-        },res)
-      }
-      else{
-        return utilityFunc.sendErrorResponse({ message : "Wrong Password!"},res);
+        return utilityFunc.sendSuccessResponse(
+          {
+            message: "Password Changed",
+           data:{
+            success:true
+           }
+          },
+          res
+        );
+      } else {
+        return utilityFunc.sendErrorResponse(
+          { message: "Wrong Password!" },
+          res
+        );
       }
     } catch (error) {
-      return utilityFunc.sendErrorResponse({error},res);
+      return utilityFunc.sendErrorResponse({ error }, res);
     }
-  }
+  },
 };
