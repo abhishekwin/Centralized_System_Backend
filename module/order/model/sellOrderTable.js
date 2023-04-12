@@ -1,6 +1,7 @@
+const mongoose = require("mongoose");
 let SellOrderP2P = mongoose.Schema(
   {
-    userId:{type: Schema.Types.ObjectId, ref: 'User'},
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     orderType: { type: String, default: "" },
     fromCurrency: { type: String, default: "" },
     toCurrency: { type: String, default: "" },
