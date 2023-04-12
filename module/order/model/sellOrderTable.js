@@ -6,6 +6,7 @@ let SellOrderP2P = mongoose.Schema(
     fromCurrency: { type: String, default: "" },
     toCurrency: { type: String, default: "" },
     yourPrice: { type: String, default: "" },
+    initialPrice: { type: String, default: "" },
     highestOrderPrice: { type: String, default: "" },
     priceType: {
       type: String,
