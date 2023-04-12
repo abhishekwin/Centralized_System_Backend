@@ -22,16 +22,12 @@ module.exports = {
       
       if (userExists) {
         let UpiExist = await Payment.findOne({upiId : data.upiId});
-        console.log("🚀 ~ file: payment.js:25 ~ createUPI: ~ UpiExist:", UpiExist.upiId);
+        console.log("🚀 ~ file: payment.js:25 ~ createUPI: ~ UpiExist:", UpiExist);
 
-        if(UpiExist.upiId === data.upiId){
-          return utilityFunc.sendErrorResponse({
-            message : "UPI already added"
-          },res)
-        }
-        else{
+        if(UpiExist === null){
+
           let newUpi = await Payment.create({
-            userId: req.decode._id,
+            paymentId: req.decode._id,
             name: data.name,
             upiId: data.upiId,
             qrcode: data.qrcode,
@@ -48,11 +44,41 @@ module.exports = {
             }},
             res
           );
+          
+        }
+        else{
+          
+          if(UpiExist.upiId === data.upiId){
+            return utilityFunc.sendErrorResponse({
+              message : "UPI already added"
+            },res)
+          }
+          else{
+            let newUpi = await Payment.create({
+              paymentId: req.decode._id,
+              name: data.name,
+              upiId: data.upiId,
+              qrcode: data.qrcode,
+            });
+            console.log("🚀 ~ file: payment.js:30 ~ createUPI: ~ newUpi:", newUpi)
+            
+            return utilityFunc.sendSuccessResponse(
+              {data:{
+                login: true,
+                exist: true,
+                password: true,
+                otp: false,
+                payment: newUpi,
+              }},
+              res
+            );
+          }
         }
       } else {
         return utilityFunc.sendErrorResponse("User doesn't exists", res);
       }
     } catch (error) {
+     console.log("🚀 ~ file: payment.js:56 ~ createUPI: ~ error:", error)
      
       return utilityFunc.sendErrorResponse(error, res);
     }
@@ -60,7 +86,7 @@ module.exports = {
   getUPI: async (req, res) => {
     try {
         let allPayements = await Payment.find({
-          userId: req.decode._id,
+          paymentId: req.decode._id,
           status: true
         });
         return utilityFunc.sendSuccessResponse(
@@ -79,20 +105,22 @@ module.exports = {
     try {
       let data = req.body;
       let validationData = await utilityFunc.validationData(req.body, [
-        "paymentId",
+        "upiId",
       ]);
 
       if (validationData && validationData.status) {
         return utilityFunc.sendErrorResponse(validationData.error, res);
       }
-      const paymentExist = await Payment.findOne({
-        _id: req.body.paymentId,
+      const paymentExist = await Payment.find({
+        paymentId: req.decode.paymentId,
         status: true
       });
+      let UpiExist = await Payment.findOne({upiId : data.upiId});
+      console.log("🚀 ~ file: payment.js:118 ~ deleteUPI: ~ paymentExist:", UpiExist._id);
 
-      if (paymentExist) {
+      if (UpiExist) {
         await Payment.findOneAndUpdate(
-          { _id: req.body.paymentId },
+          { _id: UpiExist._id },  
           { $set: { status: false } }
         );
         return utilityFunc.sendSuccessResponse(
@@ -124,12 +152,13 @@ module.exports = {
         }
 
         // check user wallet balance here from db ;
-        const userBalance = await utilityFunc.getUserByPublicAddress(
+        const userBala̵nce = await utilityFunc.getUserByPublicAddress(
             data.fromAddress
         ).balance;
+        console.log("🚀 ~ file: payment.js:158 ~ AssetTransferFromHotWallet: ~ userBala̵nce:", userBala̵nce)
 
         // let wallet = await utilityFunc.HotWalletAccess()
-        if (userBalance < data.amount) {
+        if (userBala̵nce < data.amount) {
             return utilityFunc.sendErrorResponse("User have insufficient balance", res);
         }
         const result = await utilityFunc.TransferFundsFromHotWallet(

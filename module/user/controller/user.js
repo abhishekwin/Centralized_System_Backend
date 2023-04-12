@@ -398,10 +398,13 @@ module.exports = {
           return utilityFunc.sendErrorResponse("User does not exists", res);
         } else {
           // Get the password & Hash it
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(data.password, salt);
+          let passcheck = await bcrypt.compare(
+            data.password,
+            userExist.password
+          );
+          
           // Compare the passwords
-          if (data.password === hashedPassword) {
+          if (passcheck) {
             // Create New the JWT token
             const newToken = await jwt.sign(
               {
@@ -424,7 +427,7 @@ module.exports = {
                 updatedToken: newToken,
                 user: newUser,
               },
-            });
+            },res);
           }
         }
       }
@@ -506,15 +509,18 @@ module.exports = {
   userKYC: async (req, res) => {
     try {
       let data = req.body; // Get the data from the body
-      let validationData = await utilityFunc.validationData(req.body, [
-        "userId",
-        "panNumber",
-      ]);
-      if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, res);
+
+      if (!req.decode) {
+        return utilityFunc.sendErrorResponse("Invalid User", res);
+      }
+      if (!data.aadhaarNumber && !data.panNumber) {
+        return utilityFunc.sendErrorResponse(
+          "Please Enter Adhar Number or Pan Number",
+          res
+        );
       }
       // Finding the user from userId
-      const userExist = await User.findOne({ _id: data.userId });
+      const userExist = await User.findOne({ _id: req.decode._id });
       if (userExist) {
         if (data.panNumber) {
           let panNumberJson = JSON.stringify({
@@ -536,52 +542,55 @@ module.exports = {
 
           if (response.data.code == 100) {
             const update = await User.findOneAndUpdate(
-              { _id: data.userId },
+              { _id: req.decode._id },
               { $set: { kycDetail: response.data.result, isKYCDone: true } }
             );
-            console.log("🚀 ~ file: user.js:428 ~ userKYC: ~ update:", update);
           } else {
-            utilityFunc.sendErrorResponse("Verification Failed", response.data);
+            utilityFunc.sendErrorResponse("Verification Failed", response);
           }
 
           return utilityFunc.sendSuccessResponse(
             {
+              data: response.data,
               login: true,
             },
-            response.data
+            res
           );
         }
 
-        if (data.adharNumber) {
-          const adharRequestOtpUri = process.env.adharRequestOtpUri;
+        if (data.aadhaarNumber) {
+          let aadhaarNumberJson = JSON.stringify({
+            aadhaarNumber: `${data.aadhaarNumber}`,
+          });
+          const aadharRequestOtpUri = process.env.adharRequestOtpUri;
+
           const object = {
-            url: adharRequestOtpUri,
             method: "post",
+            url: aadharRequestOtpUri,
             headers: {
               "Content-Type": "application/json",
-              secretKey: KYCSecretKey,
-              clientId: KYCClientId,
+              secretKey: process.env.KYCSecretKey,
+              clientId: process.env.KYCClientId,
             },
-            data: data,
+            data: aadhaarNumberJson,
           };
-
           const response = await axios(object);
-          if (response.result.success) {
+          if (response.data.success) {
             await User.findOneAndUpdate(
-              { _id: data.userId },
+              { _id: req.decode._id },
               {
                 $set: {
                   kycOTP: response.data.otp,
                   adharClientId: response.data.client_id,
                 },
-              }
+              },
+              { new: true }
             );
-          } else {
-            utilityFunc.sendErrorResponse("Verification Failed", res);
           }
 
           return utilityFunc.sendSuccessResponse(
             {
+              data: response.data,
               login: true,
             },
             res
@@ -591,45 +600,44 @@ module.exports = {
         return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
       }
     } catch (error) {
+      console.log("error ==> ", error);
       return utilityFunc.sendErrorResponse("User Doesn't Exists", res);
     }
   },
 
+
   adharSumitOtp: async (req, res) => {
     try {
       let data = req.body;
-      let validationData = await utilityFunc.validationData(req.body, [
-        "kycOTP",
-      ]);
-      if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, res);
-      }
-
       if (!data.otp && !data.clientId) {
         return utilityFunc.sendErrorResponse(
           "OTP and ClientId is required!",
           res
         );
       }
+
+      let aadhaarOtp = JSON.stringify({
+        client_id: `${data.client_id}`,
+        otp: `${data.otp}`,
+      });
       const adharSumitOtpUri = process.env.adharSumitOtpUri;
       const object = {
         url: adharSumitOtpUri,
         method: "post",
         headers: {
           "Content-Type": "application/json",
-          secretKey: KYCSecretKey,
-          clientId: KYCClientId,
+          secretKey: process.env.KYCSecretKey,
+          clientId: process.env.KYCClientId,
         },
-        data: { client_id: data.client_id, otp: data.otp },
+        data: aadhaarOtp,
       };
       const response = await axios(object);
 
-      // res.send(response);
-
-      if (response.result.success) {
+      if (response.data.result.success) {
         await User.findOneAndUpdate(
-          { _id: data.userId },
-          { $set: { isKYCDone: true, kycDetail: response.result } }
+          { _id: req.decode._id },
+          { $set: { isKYCDone: true, kycDetail: response.result } },
+          { new: true }
         );
       } else {
         utilityFunc.sendErrorResponse("Verification Failed", res);
@@ -637,6 +645,7 @@ module.exports = {
 
       return utilityFunc.sendSuccessResponse(
         {
+          data: response.data,
           login: true,
         },
         res
@@ -729,14 +738,14 @@ module.exports = {
             res
           );
         } else {
-          let OTP = await utilityFunc.createMsg(data.phoneNumber);
+          let OTP = await utilityFunc.createMsg(req);
           console.log("🚀 ~ file: user.js:626 ~ updateEmailPhone: ~ OTP:", OTP);
           await User.findOneAndUpdate(
             { _id: req.decode._id },
             {
               $set: {
                 phoneNumber: data.phoneNumber,
-                OTP: OTP,
+                OTP: OTP.OTP,
                 isPhoneVerified: false,
               },
             }
