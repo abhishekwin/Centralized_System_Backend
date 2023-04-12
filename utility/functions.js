@@ -15,6 +15,7 @@ const {
   generateWallet,
   generatePrivateKeyFromMnemonic,
 } = require("@tatumio/tatum");
+const axios = require("axios");
 
 const client = require("twilio")(
   process.env.TWILIO_ACCOUNT_SID,
@@ -269,6 +270,15 @@ const getBalance = async function(address) {
   return balance;
 };
 
+let getPrice = async function (fromCurrency,toCurrency){
+  const price = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${fromCurrency}&vs_currencies=${toCurrency}`)
+  if(price){
+    return price.data
+  }
+  return false;
+  
+}
+
 module.exports = {
   userAuthentication,
   sendErrorResponse,
@@ -285,4 +295,5 @@ module.exports = {
   TransferFundsToHotWallet,
   getUserByPublicAddress,
   getBalance,
+  getPrice,
 };
