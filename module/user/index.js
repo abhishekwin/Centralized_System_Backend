@@ -12,7 +12,7 @@ router.post('/createAccount', userController.createAccount);
 // check phone number or email or gid or fid exist ort not
 router.post("/verify", userController.verifyAccount);
 
-router.post("/verifOtp", userController.verifyOTP);
+router.post("/verifyOtp", userController.verifyOTP);
 
 router.post("/login",userController.login);
 router.post("/resendOTP", userController.resendOtp);

@@ -353,10 +353,16 @@ module.exports = {
           return utilityFunc.sendErrorResponse("User does not exists", res);
         } else {
           // Get the password & Hash it
-          const salt = await bcrypt.genSalt(10);
-          const hashedPassword = await bcrypt.hash(data.password, salt);
+          let passcheck = await bcrypt.compare(
+            data.password,
+            userExist.password
+          );
+          console.log("🚀 ~ file: user.js:360 ~ login: ~ passcheck:", passcheck)
+          
           // Compare the passwords
-          if (data.password === hashedPassword) {
+          if (passcheck) {
+            console.log("🚀 ~ file: user.js:363 ~ login: ~ passcheck:", passcheck)
+            
             // Create New the JWT token
             const newToken = await jwt.sign(
               {
