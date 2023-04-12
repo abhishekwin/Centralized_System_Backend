@@ -2,6 +2,7 @@ const nodemailer = require("nodemailer");
 const Web3 = require("web3");
 const User = require("../module/user/model/userTable");
 require("dotenv").config();
+
 // const tokenAbi = require("../../../config/tokenAbi.json")
 
 const keystoreJsonV3 = require("../config/constants.json");
