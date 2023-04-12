@@ -7,37 +7,53 @@ const User = require("../../user/model/userTable");
 module.exports = {
   createUPI: async (req, res) => {
     try {
+      
       let data = req.body;
       let validationData = await utilityFunc.validationData(req.body, [
         "upiId",
         "name",
       ]);
+      
       if (validationData && validationData.status) {
+        
         return utilityFunc.sendErrorResponse(validationData.error, res);
       }
       const userExists = await User.findOne({ _id: req.decode._id });
+      
       if (userExists) {
-        let newUpi = await Payment.create({
-          userId: req.decode._id,
-          name: data.name,
-          upiId: data.upiId,
-          qrcode: data.qrcode,
-        });
+        let UpiExist = await Payment.findOne({upiId : data.upiId});
+        console.log("🚀 ~ file: payment.js:25 ~ createUPI: ~ UpiExist:", UpiExist.upiId);
 
-        return utilityFunc.sendSuccessResponse(
-          {
-            login: true,
-            exist: true,
-            password: true,
-            otp: false,
-            user: newUpi,
-          },
-          res
-        );
+        if(UpiExist.upiId === data.upiId){
+          return utilityFunc.sendErrorResponse({
+            message : "UPI already added"
+          },res)
+        }
+        else{
+          let newUpi = await Payment.create({
+            userId: req.decode._id,
+            name: data.name,
+            upiId: data.upiId,
+            qrcode: data.qrcode,
+          });
+          console.log("🚀 ~ file: payment.js:30 ~ createUPI: ~ newUpi:", newUpi)
+          
+          return utilityFunc.sendSuccessResponse(
+            {data:{
+              login: true,
+              exist: true,
+              password: true,
+              otp: false,
+              payment: newUpi,
+            }},
+            res
+          );
+        }
       } else {
         return utilityFunc.sendErrorResponse("User doesn't exists", res);
       }
     } catch (error) {
+     
       return utilityFunc.sendErrorResponse(error, res);
     }
   },

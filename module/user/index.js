@@ -15,6 +15,7 @@ router.post("/verify", userController.verifyAccount);
 router.post("/verifOtp", userController.verifyOTP);
 
 router.post("/login",userController.login);
+router.post("/resendOTP", userController.resendOtp);
 
 router.get("/getProfile", userAuthentication, userController.getProfile);
 

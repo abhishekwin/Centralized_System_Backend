@@ -270,6 +270,7 @@ module.exports = {
           "Email Or Phone Number Is Required!",
           res
         );
+
       }
       if (data.email) {
         let userFound = await User.findOne({ email: data.email });
@@ -425,6 +426,55 @@ module.exports = {
       console.log("error ==> ", error);
       utilityFunc.sendErrorResponse(error, res);
     }
+  },
+  resendOtp : async (req, res) => {
+     try {
+      let data = req.body;
+      if (!data.email && !data.phoneNumber) {
+        return utilityFunc.sendErrorResponse(
+          "Email Or Phone Number Is Required!",
+          res
+        );
+      }
+  
+      if (data.phoneNumber) {
+        let userExist = await User.findOne({phoneNumber : data.phoneNumber});
+  
+        if(userExist){
+          let OTP = await utilityFunc.createMsg(req);
+          await User.findOneAndUpdate(
+            {phoneNumber : data.phoneNumber},
+            { $set :{OTP : OTP}}
+          )
+          return utilityFunc.sendSuccessResponse({
+              message : "OTP Sent!"
+          },res);
+        }
+      }
+      if(data.email){
+        let userExist = await User.findOne({email : data.email});
+        if(userExist){
+          let OTP = await utilityFunc.createEmail(req);
+          await User.findOneAndUpdate(
+            {email : data.email},
+            { set : {OTP : OTP.OTP}}
+          );
+          return utilityFunc.sendSuccessResponse({
+            message : "OTP Sent!"
+          },res);
+        }
+        else{
+          return utilityFunc.sendErrorResponse({
+            message : "User Doesn't Exists !"
+          },res);
+        }
+      }
+     } catch (error) {
+      console.log("🚀 ~ file: user.js:468 ~ resendOtp: ~ error:", error)
+      return utilityFunc.sendErrorResponse({
+        error
+      },res);
+     } 
   },
   getProfile: async (req, res) => {
     try {
@@ -606,9 +656,10 @@ module.exports = {
               pinCode: data.pinCode,
               city: data.city,
               country: data.country,
-              aadharCardNo: data.aadharCardNo,
-              pancardNo: data.pancardNo,
+              
             },
+            aadharCardNo: data.aadharCardNo,
+            pancardNo: data.pancardNo,
           },
         },
         { new: true }
@@ -645,11 +696,11 @@ module.exports = {
           );
         } else {
           let OTP = await utilityFunc.createEmail(req);
-          console.log("🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:", OTP);
+          console.log("🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:", OTP.OTP);
 
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { email: data.email, OTP: OTP, isEmailVerified: false } }
+            { $set: { email: data.email, OTP: OTP.OTP, isEmailVerified: false } }
           );
           return utilityFunc.sendSuccessResponse(
             {
@@ -659,7 +710,8 @@ module.exports = {
             res
           );
         }
-      } else if (data.phoneNumber) {
+      } else
+       if (data.phoneNumber) {
         let phoneNumberExist = await User.find({
           phoneNumber: req.body.phoneNumber,
         });
@@ -704,7 +756,7 @@ module.exports = {
 
       return utilityFunc.sendErrorResponse(
         {
-          message: "Phone Number Already exists",
+          error
         },
         res
       );
