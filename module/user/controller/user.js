@@ -403,6 +403,7 @@ module.exports = {
             userExist.password
           );
           
+          
           // Compare the passwords
           if (passcheck) {
             // Create New the JWT token
