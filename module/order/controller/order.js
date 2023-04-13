@@ -6,25 +6,32 @@ const { default: axios } = require("axios");
 module.exports = {
   getBuyOrder: async (req, resp) => {
     try {
-      const userId = req.decode._id;
-      console.log("🚀 ~ file: order.js:10 ~ getBuyOrder: ~ userId:", userId);
-      const orderDetails = await BuyOrder.find({
-        userId: userId,
-      });
+      let validationData = await utilityFunc.validationData(req.body, [
+        "pageNumber",
+        "filterName",
+        "filterValue"
+      ]);
+      if (validationData && validationData.status) {
+        return utilityFunc.sendErrorResponse(validationData.error, resp);
+      }
+      let findQuerry = {orderStatus: "Published"}
+      if(req.body.filterName === "amount" && req.body.filterValue != ""){
+        findQuerry.yourPrice = req.body.filterValue
+      }
+      const orderDetails = await BuyOrder.find(findQuerry).skip((Number(req.body.pageNumber)-1)*10).limit(10);
+      const orderDetailsCount = await BuyOrder.find(findQuerry).count()
       if (!orderDetails) {
         return utilityFunc.sendErrorResponse(
           { message: "Order Not Found", data: {} },
           resp
         );
       }
-
-      return utilityFunc.sendSuccessResponse(
+      return utilityFunc.sendSuccessResponseWithCount(
         {
           message: "Order Details",
-          data: {
-            orderDetails,
-          },
+          data:orderDetails
         },
+        orderDetailsCount,
         resp
       );
     } catch (err) {

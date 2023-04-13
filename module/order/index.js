@@ -16,7 +16,7 @@ router.post("/createSellOrder",Authentication.userAuthentication,orderController
 //@desc API for getting the buy order details user can get details about the  buy order
 //@route order/getBuyOrder
 //@access public
-router.get("/getBuyOrder", Authentication.userAuthentication, orderController.getBuyOrder);
+router.post("/getBuyOrder", Authentication.userAuthentication, orderController.getBuyOrder);
 //@desc API for getting the sell order details user can get details about the sell order
 //@route order/getSellOrder
 //@access public
