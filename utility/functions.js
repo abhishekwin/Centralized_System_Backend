@@ -271,14 +271,15 @@ const getBalance = async function(address) {
   return balance;
 };
 
-let getPrice = async function (fromCurrency,toCurrency){
-  const price = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${fromCurrency}&vs_currencies=${toCurrency}`)
-  if(price){
-    return price.data
+let getPrice = async function(fromCurrency, toCurrency) {
+  const price = await axios.get(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${fromCurrency}&vs_currencies=${toCurrency}`
+  );
+  if (price) {
+    return price.data;
   }
   return false;
-  
-}
+};
 
 module.exports = {
   userAuthentication,
