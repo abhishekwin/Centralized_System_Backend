@@ -19,7 +19,7 @@ module.exports = {
       let data = req.body;
 
       let validationData = await utilityFunc.validationData(req.body, [
-        "password",
+        "c",
       ]);
       if (validationData && validationData.status) {
         return utilityFunc.sendErrorResponse(validationData.error, res);

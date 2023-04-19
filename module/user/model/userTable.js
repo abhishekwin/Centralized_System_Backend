@@ -22,6 +22,7 @@ let userSchema = mongoose.Schema(
     token: { type: String, default: "" },
     cryptoAddress: { type: String, default: "" },
     wId: { type: String, default: "" },
+    balance: { type: Number, default: 0 },
     status: { type: Boolean, default: false },
     address: {
       userName: { type: String, default: "" },

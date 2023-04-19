@@ -16,7 +16,9 @@ const {
   generateWallet,
   generatePrivateKeyFromMnemonic,
 } = require("@tatumio/tatum");
-const axios = require("axios");
+const { promises } = require("nodemailer/lib/xoauth2");
+const { resolve } = require("path");
+const { rejects } = require("assert");
 
 const client = require("twilio")(
   process.env.TWILIO_ACCOUNT_SID,
@@ -66,6 +68,7 @@ let sendSuccessResponse = function(result, res, other) {
     ...totalcount,
   };
   sendData = { ...sendData, ...other };
+  console.log("status_code", sendData);
   return res.status(result.status_code || 200).send(sendData);
 };
 let validationData = function(reqData, validateData) {
@@ -142,9 +145,9 @@ const GenrateWallet = async function() {
   console.log(ethWallet);
 };
 
-const GenratePrivateKey = async function() {
+const GenratePrivateKey = async function(existingWId) {
   try {
-    const wId = await GenerateID();
+    const wId = existingWId == "" ? await GenerateID() : existingWId;
 
     console.log(
       "🚀 ~ file: functions.js:162 ~ GenratePrivateKey ~ process.env.MNEMONIC:",
@@ -168,7 +171,7 @@ const GenratePrivateKey = async function() {
       publicAddress
     );
 
-    return { publicAddress, wId };
+    return { publicAddress, wId, resultData };
   } catch (error) {
     console.log(error.message);
   }
@@ -199,68 +202,94 @@ const GenerateID = async function() {
 };
 
 const HotWalletAccess = async function() {
-  let object = await web3.eth.accounts.decrypt(keystoreJsonV3, "ACCESS_KEY");
+  let object = await web3.eth.accounts.decrypt(
+    keystoreJsonV3,
+    process.env.ACCESSKEY
+  );
   return object;
 };
 
 const TransferFundsFromHotWallet = async function(toAddress, amount) {
-  let object = await HotWalletAccess();
-  //  let account = await web3.eth.accounts.add(object.privateKey)
-
-  console.log(object);
-
-  await web3.eth.getBalance(object.address).then(console.log);
-
-  let data = await web3.eth.accounts.signTransaction(
-    {
-      to: toAddress,
-      value: web3.utils.toWei(amount, "ether"),
-      gas: 21000,
-    },
-    object.privateKey
-  );
-
-  console.log(data.rawTransaction, "transaction");
-
-  const hash = web3.eth
-    .sendSignedTransaction(data.rawTransaction)
-    .on("receipt", console.log);
-
-  return { hash: hash };
+  return new Promise(async (resolve, reject) => {
+    let object = await HotWalletAccess();
+    await web3.eth.getBalance(object.address).then(console.log);
+    let data = await web3.eth.accounts.signTransaction(
+      {
+        to: toAddress,
+        value: web3.utils.toWei(amount, "ether"),
+        gas: 21000,
+      },
+      object.privateKey
+    );
+    const hash = web3.eth
+      .sendSignedTransaction(data.rawTransaction)
+      .on("receipt", console.log);
+    resolve(hash);
+  });
 };
 
 const TransferFundsToHotWallet = async function(
   toAddress,
   fromAddress,
-  amount,
-  wId
+  amount
 ) {
-  // let wId = await getUser(cryptoaccount=fromAddress).wId
+  console.log("🚀 ~ file: functions.js:237 ~ amount:", amount);
+  let wId = await getUserByPublicAddress(fromAddress);
+  console.log("🚀 ~ file: functions.js:239 ~ wId:", wId.wId);
 
-  const object = await GenratePrivateKey(wId);
+  const object = await GenratePrivateKey(wId.wId);
+  console.log("🚀 ~ file: functions.js:241 ~ object:", object)
+  // console.log("🚀 ~ file: functions.js:247 ~ value:", );
 
   const data = await web3.eth.accounts.signTransaction(
     {
       to: toAddress,
-      value: web3.utils.toWei(amount, "ether"),
-      gas: 21000,
+      fromAddress,
+      value: web3.utils.toBN(
+        amount // converts Number to BN, which is accepted by `toWei()`
+      ),
+      gas: 21_000,
     },
-    object.privateKey
+    object.resultData
   );
+  // object.wId
 
-  console.log(data.rawTransaction, "transaction");
+  console.log("🚀 ~ file: functions.js:254 ~ data:", data);
 
-  web3.eth
-    .sendSignedTransaction(data.rawTransaction)
-    .on("receipt", console.log);
-  await web3.eth.getBalance(object.address).then(console.log);
+  const recipt = await web3.eth
+    .sendSignedTransaction(data.rawTransaction);
+    return recipt;
+
+  // await web3.eth.getBalance(object.publicAddress).then(console.log);
+
 };
+
+// const updateWalletBalance = async function(id, value) {
+//   console.log(
+//     "🚀 ~ file: functions.js:265 ~ updateWalletBalance ~ value:",
+//     value
+//   );
+//   console.log("🚀 ~ file: functions.js:265 ~ updateWalletBalance ~ id:", id);
+//   try {
+//     const updatedResult = await User.findAndUpdate(
+//       { _id: data._id },
+//       {
+//         balance: value,
+//       },
+//       {
+//         new: true,
+//       }
+//     );
+
+//     return updatedResult;
+//   } catch (error) {
+//     console.log(error.message);
+//   }
+// };
 
 const getUserByPublicAddress = async function(cryptoAddress) {
   try {
-    const user = await User.findOne({ cryptoAddress: cryptoAddress });
-    const userBalance = await User.getBalance(user.address);
-    return userBalance;
+    return await User.findOne({ cryptoAddress: cryptoAddress });
     // console.log(user);
   } catch (error) {}
 };
@@ -281,6 +310,21 @@ let getPrice = async function(fromCurrency, toCurrency) {
   return false;
 };
 
+const getGasFee = async function() {
+  const gasPrice = await web3.eth.getGasPrice();
+  return gasPrice * 21_000;
+};
+
+const getHotWalletBalance = async function(address) {
+  hotWalletaddress = "0x656e048f25B59636Fc89a26275a1C56E5FA7E5AD";
+  const balance = await web3.eth.getBalance(address);
+  console.log(
+    "🚀 ~ file: functions.js:318 ~ getHotWalletBalance ~ balance:",
+    balance
+  );
+  return balance;
+};
+
 module.exports = {
   userAuthentication,
   sendErrorResponse,
@@ -298,4 +342,6 @@ module.exports = {
   getUserByPublicAddress,
   getBalance,
   getPrice,
+  getGasFee,
+  getHotWalletBalance,
 };

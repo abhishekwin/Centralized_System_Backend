@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 let SellOrderP2P = mongoose.Schema(
   {
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "payment" },
     orderType: { type: String, default: "" },
     fromCurrency: { type: String, default: "" },
     toCurrency: { type: String, default: "" },
@@ -39,4 +40,4 @@ let SellOrderP2P = mongoose.Schema(
   { timestamp: true, versionKey: false }
 );
 
-module.exports = mongoose.model("SellerOrderP2P", SellOrderP2P);
+module.exports = mongoose.model("SellOrderP2P", SellOrderP2P);
