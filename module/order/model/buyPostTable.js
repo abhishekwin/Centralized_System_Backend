@@ -1,12 +1,14 @@
 const mongoose = require("mongoose");
-let SellOrderP2P = mongoose.Schema(
+
+let BuyOrderP2P = mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    userId:{type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     orderType: { type: String, default: "" },
     fromCurrency: { type: String, default: "" },
     toCurrency: { type: String, default: "" },
     yourPrice: { type: String, default: "" },
     initialPrice: { type: String, default: "" },
+    availableBalance:{type: String, default:""},
     highestOrderPrice: { type: String, default: "" },
     priceType: {
       type: String,
@@ -33,9 +35,9 @@ let SellOrderP2P = mongoose.Schema(
       ],
       default: "Unpublished",
     },
-    sellerUPID: { type: String, default: "" },
+    buyerUPID: { type: String, default: "",required: true}
   },
   { timestamp: true, versionKey: false }
 );
 
-module.exports = mongoose.model("SellerOrderP2P", SellOrderP2P);
+module.exports = mongoose.model("BuyOrderP2P", BuyOrderP2P);
