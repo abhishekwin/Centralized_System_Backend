@@ -1,9 +1,8 @@
-const BuyOrder = require("../model/buyPostTable");
-const SellOrder = require("../model/sellPostTable");
+// const BuyOrder = require("../model/buyPostTable");
+// const SellOrder = require("../model/sellPostTable");
+const PostTable = require("../model/postTable");
 const utilityFunc = require("../../../utility/functions");
-const { default: axios } = require("axios");
 const ObjectId = require("objectid");
-
 
 module.exports = {
   getBuyPosts: async (req, resp) => {
@@ -24,7 +23,7 @@ module.exports = {
           resp
         );
       }
-      let findQuerry = { orderStatus: "Published" };
+      let findQuerry = { orderStatus: "Published", orderType: "BUY" };
       if (req.body.filterName === "amount" && req.body.filterValue != "") {
         findQuerry.minOrderLimit = req.body.filterValue;
         console.log("At Line 20 API");
@@ -33,14 +32,14 @@ module.exports = {
         "🚀 ~ file: order.js:21 ~ getBuyPosts: ~ findQuerry:",
         findQuerry
       );
-      const orderDetails = await BuyOrder.find(findQuerry)
+      const orderDetails = await PostTable.find(findQuerry)
         .skip((Number(req.body.pageNumber) - 1) * 10)
         .limit(10);
       console.log(
         "🚀 ~ file: order.js:24 ~ getBuyPosts: ~ orderDetails:",
         orderDetails
       );
-      const orderDetailsCount = await BuyOrder.find(findQuerry).count();
+      const orderDetailsCount = await PostTable.find(findQuerry).count();
       console.log(
         "🚀 ~ file: order.js:26 ~ getBuyPosts: ~ orderDetailsCount:",
         orderDetailsCount
@@ -71,7 +70,10 @@ module.exports = {
         "filterName",
         "filterValue",
       ]);
-      console.log("🚀 ~ file: order.js:72 ~ getSellPosts: ~ validationData:", validationData)
+      console.log(
+        "🚀 ~ file: order.js:72 ~ getSellPosts: ~ validationData:",
+        validationData
+      );
 
       if (validationData && validationData.status) {
         console.log("Inside If Line 75");
@@ -80,22 +82,31 @@ module.exports = {
           resp
         );
       }
-      let findQuerry = { orderStatus: "Published" };
-      
-      console.log("🚀 ~ file: order.js:83 ~ getSellPosts: ~ findQuerry:", findQuerry)
+      let findQuerry = { orderStatus: "Published", orderType: "SELL" };
+
+      console.log(
+        "🚀 ~ file: order.js:83 ~ getSellPosts: ~ findQuerry:",
+        findQuerry
+      );
       if (req.body.filterName === "amount" && req.body.filterValue != "") {
         console.log(`Inside Filter If Line 85`);
         findQuerry.minOrderLimit = req.body.filterValue;
       }
 
-      const orderDetails = await SellOrder.find(findQuerry)
+      const orderDetails = await PostTable.find(findQuerry)
         .skip((Number(req.body.pageNumber) - 1) * 10)
         .limit(10);
-        console.log("🚀 ~ file: order.js:92 ~ getSellPosts: ~ orderDetails:", orderDetails)
-        
-      const orderDetailsCount = await SellOrder.find(findQuerry).count();
-      console.log("🚀 ~ file: order.js:95 ~ getSellPosts: ~ orderDetailsCount:", orderDetailsCount)
-      
+      console.log(
+        "🚀 ~ file: order.js:92 ~ getSellPosts: ~ orderDetails:",
+        orderDetails
+      );
+
+      const orderDetailsCount = await PostTable.find(findQuerry).count();
+      console.log(
+        "🚀 ~ file: order.js:95 ~ getSellPosts: ~ orderDetailsCount:",
+        orderDetailsCount
+      );
+
       if (!orderDetails) {
         return utilityFunc.sendErrorResponse(
           { message: "Order Not Found", data: {} },
@@ -119,17 +130,20 @@ module.exports = {
     try {
       let validationData = await utilityFunc.validationData(req.body, [
         "orderType",
-        "fromCurrency",
-        "toCurrency",
+        "asset",
+        "withFiat",
+        "priceType",
         "yourPrice",
-        "paymentMethod",
-        "paymentTimeLimit",
+        "totalAmount",
         "minOrderLimit",
         "maxOrderLimit",
-        "buyerUPID",
+        "paymentMethod",
+        "paymentTimeLimit",
+        "terms",
+        "buyerUPId",
       ]);
       if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, resp);
+        throw new Error("Invalid Validation Data");
       }
 
       const balance = await utilityFunc.getBalance(req.decode.cryptoAddress);
@@ -137,25 +151,21 @@ module.exports = {
         "🚀 ~ file: order.js:101 ~ createBuyPost: ~ balance:",
         balance
       );
-      const price = await utilityFunc.getPrice(
-        req.body.fromCurrency,
-        req.body.toCurrency
-      );
-      console.log("🚀 ~ file: order.js:38 ~ createBuyOrder: ~ price:", price);
+      const {
+        tether: { inr },
+      } = await utilityFunc.getPrice(req.body.asset, req.body.withFiat);
+      console.log("🚀 ~ file: order.js:38 ~ createBuyOrder: ~ price:", inr);
 
       if (balance < req.body.totalAmount) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Insufficient Balance" },
-          resp
-        );
+        throw new Error("Insufficient Balance");
       }
-      const newOrder = await BuyOrder.create({
+      const newOrder = await PostTable.create({
         userId: req.decode._id,
         orderType: req.body.orderType,
-        fromCurrency: req.body.fromCurrency,
-        toCurrency: req.body.toCurrency,
+        asset: req.body.asset,
+        withFiat: req.body.withFiat,
         yourPrice: req.body.yourPrice,
-        initialPrice: req.body.yourPrice,
+        available: req.body.totalAmount,
         highestPrice: req.body.highestPrice,
         priceType: req.body.priceType,
         paymentMethod: req.body.paymentMethod,
@@ -165,7 +175,7 @@ module.exports = {
         terms: req.body.terms,
         autoReply: req.body.autoReply,
         counterPartyCondition: req.body.counterPartyCondition,
-        orderStatus: req.body.orderStatus,
+        postStatus: req.body.orderStatus,
         buyerUPID: req.body.buyerUPID,
       });
 
@@ -181,14 +191,16 @@ module.exports = {
       return utilityFunc.sendErrorResponse(err, resp);
     }
   },
-  getorderById: async (req, resp) => {
+  getPostById: async (req, resp) => {
     try {
       let querryData = req.params;
-      console.log("querydata ===> ",querryData)
-      if(!querryData.id){
-        throw new Error("Order id is Required!")
+      console.log("querydata ===> ", querryData);
+      if (!querryData.id) {
+        throw new Error("Order id is Required!");
       }
-      const orderDeatils = await BuyOrder.findOne({_id: ObjectId(querryData.id)}).populate('userId')
+      const orderDeatils = await PostTable.findOne({
+        _id: ObjectId(querryData.id),
+      }).populate("userId");
       return utilityFunc.sendSuccessResponse(
         {
           message: "get Order detail by id success",
@@ -205,17 +217,24 @@ module.exports = {
     try {
       let validationData = await utilityFunc.validationData(req.body, [
         "orderType",
-        "fromCurrency",
-        "toCurrency",
+        "asset",
+        "withFiat",
+        "priceType",
         "yourPrice",
-        "paymentMethod",
-        "paymentTimeLimit",
         "minOrderLimit",
         "maxOrderLimit",
-        "buyerUPID",
+        "paymentMethod",
+        "totalAmount",
+        "paymentTimeLimit",
+        "terms",
+        "sellerUPId",
       ]);
+      console.log(
+        "🚀 ~ file: posts.js:232 ~ createSellPost: ~ validationData:",
+        validationData
+      );
       if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, resp);
+        throw new Error("Invalid Validation Data");
       }
 
       const balance = await utilityFunc.getBalance(req.decode.cryptoAddress);
@@ -223,25 +242,21 @@ module.exports = {
         "🚀 ~ file: order.js:101 ~ createBuyPost: ~ balance:",
         balance
       );
-      const price = await utilityFunc.getPrice(
-        req.body.fromCurrency,
-        req.body.toCurrency
-      );
-      console.log("🚀 ~ file: order.js:199 ~ createSellPost: ~ price:", price);
+      const {
+        tether: { inr },
+      } = await utilityFunc.getPrice(req.body.asset, req.body.withFiat);
+      console.log("🚀 ~ file: order.js:38 ~ createBuyOrder: ~ price:", inr);
 
       if (balance < req.body.totalAmount) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Insufficient Balance" },
-          resp
-        );
+        throw new Error("Insufficient Balance");
       }
-      const newOrder = await SellOrder.create({
+      const newOrder = await PostTable.create({
         userId: req.decode._id,
         orderType: req.body.orderType,
-        fromCurrency: req.body.fromCurrency,
-        toCurrency: req.body.toCurrency,
+        asset: req.body.asset,
+        withFiat: req.body.withFiat,
         yourPrice: req.body.yourPrice,
-        initialPrice: req.body.yourPrice,
+        available: req.body.totalAmount,
         highestPrice: req.body.highestPrice,
         priceType: req.body.priceType,
         paymentMethod: req.body.paymentMethod,
@@ -252,16 +267,19 @@ module.exports = {
         autoReply: req.body.autoReply,
         counterPartyCondition: req.body.counterPartyCondition,
         orderStatus: req.body.orderStatus,
-        buyerUPID: req.body.buyerUPID,
+        sellerUPId: req.body.sellerUPId,
       });
 
       return utilityFunc.sendSuccessResponse(
         {
-          message: "Sell Order Created Successfully",
+          message: "Sell Post Created Successfully",
           data: newOrder,
         },
         resp
       );
-    } catch (err) {}
+    } catch (err) {
+      console.log("🚀 ~ file: order.js:62 ~ createBuyOrder: ~ err:", err);
+      return utilityFunc.sendErrorResponse(err, resp);
+    }
   },
 };
