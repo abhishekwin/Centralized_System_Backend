@@ -1,237 +1,138 @@
-const BuyOrder = require("../model/buyOrderTable");
-const SellOrder = require("../model/sellOrderTable");
+const orderTable = require("../model/orderTable");
+const postTable = require("../model/postTable");
 const utilityFunc = require("../../../utility/functions");
-const { default: axios } = require("axios");
-const { response } = require("express");
+const ObjectId = require("objectid");
 
 module.exports = {
-  getBuyPosts: async (req, resp) => {
+  createBuyOrder: async (req, resp) => {
     try {
+      // TODO: Data Validation Here
       let validationData = await utilityFunc.validationData(req.body, [
-        "pageNumber",
-        "filterName",
-        "filterValue",
-      ]);
-      console.log(
-        "🚀 ~ file: order.js:14 ~ getBuyPosts: ~ validationData:",
-        validationData
-      );
-      if (validationData && validationData.status) {
-        console.log("Inside IF Validation Data is not valids");
-        return utilityFunc.sendErrorResponse(
-          { message: validationData.error },
-          resp
-        );
-      }
-      let findQuerry = { orderStatus: "Published" };
-      if (req.body.filterName === "amount" && req.body.filterValue != "") {
-        findQuerry.minOrderLimit = req.body.filterValue;
-        console.log("At Line 20 API");
-      }
-      console.log(
-        "🚀 ~ file: order.js:21 ~ getBuyPosts: ~ findQuerry:",
-        findQuerry
-      );
-      const orderDetails = await BuyOrder.find(findQuerry)
-        .skip((Number(req.body.pageNumber) - 1) * 10)
-        .limit(10);
-      console.log(
-        "🚀 ~ file: order.js:24 ~ getBuyPosts: ~ orderDetails:",
-        orderDetails
-      );
-      const orderDetailsCount = await BuyOrder.find(findQuerry).count();
-      console.log(
-        "🚀 ~ file: order.js:26 ~ getBuyPosts: ~ orderDetailsCount:",
-        orderDetailsCount
-      );
-      if (!orderDetails) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Order Not Found", data: {} },
-          resp
-        );
-      }
-      return utilityFunc.sendSuccessResponseWithCount(
-        {
-          message: "Order Details",
-          data: orderDetails,
-        },
-        orderDetailsCount,
-        resp
-      );
-    } catch (err) {
-      console.log("🚀 ~ file: order.js:62 ~ createBuyOrder: ~ err:", err);
-      return utilityFunc.sendErrorResponse(err, resp);
-    }
-  },
-  getSellPosts: async (req, resp) => {
-    try {
-      let validationData = await utilityFunc.validationData(req.body, [
-        "pageNumber",
-        "filterName",
-        "filterValue",
+        "amount",
+        "quantity",
+        "postId",
       ]);
 
       if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(
-          { message: validationData.error },
-          resp
-        );
-      }
-      let findQuerry = { orderStatus: "Published" };
-      if (req.body.filterName === "amount" && req.body.filterValue != "") {
-        findQuerry.minOrderLimit = req.body.filterValue;
+        throw new Error(validationData.error, resp);
       }
 
-      const orderDetails = await SellOrder.find(findQuerry)
-        .skip((Number(req.body.pageNumber) - 1) * 10)
-        .limit(10);
-      const orderDetailsCount = await SellOrder.find(findQuerry).count();
-      if (!orderDetails) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Order Not Found", data: {} },
-          resp
-        );
+      //TODO: FINDING POST ID FROM THE POSTABLE
+      let postData = await postTable.findById({ _id: req.body.postId });
+      if (!postData) {
+        throw new Error("Invalid Post Id", resp);
       }
-      return utilityFunc.sendSuccessResponseWithCount(
-        {
-          message: "Order Details",
-          data: orderDetails,
-        },
-        orderDetailsCount,
-        resp
-      );
-    } catch (err) {
-      console.log("🚀 ~ file: order.js:62 ~ createBuyOrder: ~ err:", err);
-      return utilityFunc.sendErrorResponse(err, resp);
-    }
-  },
-  createBuyPost: async (req, resp) => {
-    try {
-      let validationData = await utilityFunc.validationData(req.body, [
-        "orderType",
-        "fromCurrency",
-        "toCurrency",
-        "yourPrice",
-        "paymentMethod",
-        "paymentTimeLimit",
-        "minOrderLimit",
-        "maxOrderLimit",
-        "buyerUPID",
-      ]);
-      if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, resp);
-      }
+      // console.log("🚀 ~ file: order.js:17 ~ createBuyOrder: ~ postData:", postData)
 
-      const balance = await utilityFunc.getBalance(req.decode.cryptoAddress);
-      console.log(
-        "🚀 ~ file: order.js:101 ~ createBuyPost: ~ balance:",
-        balance
-      );
-      const price = await utilityFunc.getPrice(
-        req.body.fromCurrency,
-        req.body.toCurrency
-      );
-      console.log("🚀 ~ file: order.js:38 ~ createBuyOrder: ~ price:", price);
-
-      if (balance < req.body.totalAmount) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Insufficient Balance" },
-          resp
-        );
-      }
-      const newOrder = await BuyOrder.create({
-        userId: req.decode._id,
-        orderType: req.body.orderType,
-        fromCurrency: req.body.fromCurrency,
-        toCurrency: req.body.toCurrency,
-        yourPrice: req.body.yourPrice,
-        initialPrice: req.body.yourPrice,
-        highestPrice: req.body.highestPrice,
-        priceType: req.body.priceType,
-        paymentMethod: req.body.paymentMethod,
-        paymentTimeLimit: req.body.paymentTimeLimit,
-        minOrderLimit: req.body.minOrderLimit,
-        maxOrderLimit: req.body.maxOrderLimit,
-        terms: req.body.terms,
-        autoReply: req.body.autoReply,
-        counterPartyCondition: req.body.counterPartyCondition,
-        orderStatus: req.body.orderStatus,
-        buyerUPID: req.body.buyerUPID,
+      const orderDetails = await orderTable.create({
+        postedUserId: postData.userid,
+        postId: req.body.postId,
+        createdBy: req.decode._id,
+        amount: req.body.amount,
+        paymentId: req.body.paymentId,
+        quantity: req.body.quantity,
+        paymentMethod: postData.paymentMethod,
+        sellerUPID: postData.sellerUPId,
+        orderStatus: "OrderCreated",
       });
 
       return utilityFunc.sendSuccessResponse(
         {
-          message: "Buy Order Created Successfully",
-          data: newOrder,
+          data: {
+            message: " Buy Order Created",
+            buyOrder: orderDetails,
+          },
         },
         resp
       );
     } catch (err) {
-      console.log("🚀 ~ file: order.js:62 ~ createBuyOrder: ~ err:", err);
       return utilityFunc.sendErrorResponse(err, resp);
     }
   },
-  createSellPost: async (req, resp) => {
+  getorderById: async (req, resp) => {
     try {
-      let validationData = await utilityFunc.validationData(req.body, [
-        "orderType",
-        "fromCurrency",
-        "toCurrency",
-        "yourPrice",
-        "paymentMethod",
-        "paymentTimeLimit",
-        "minOrderLimit",
-        "maxOrderLimit",
-        "buyerUPID",
-      ]);
-      if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, resp);
+      const orderId = req.params.id;
+      if (!orderId) {
+        throw new Error(`Order id is required!`);
       }
 
-      const balance = await utilityFunc.getBalance(req.decode.cryptoAddress);
-      console.log(
-        "🚀 ~ file: order.js:101 ~ createBuyPost: ~ balance:",
-        balance
-      );
-      const price = await utilityFunc.getPrice(
-        req.body.fromCurrency,
-        req.body.toCurrency
-      );
-      console.log("🚀 ~ file: order.js:199 ~ createSellPost: ~ price:", price);
-
-      if (balance < req.body.totalAmount) {
-        return utilityFunc.sendErrorResponse(
-          { message: "Insufficient Balance" },
-          resp
-        );
-      }
-      const newOrder = await SellOrder.create({
-        userId: req.decode._id,
-        orderType: req.body.orderType,
-        fromCurrency: req.body.fromCurrency,
-        toCurrency: req.body.toCurrency,
-        yourPrice: req.body.yourPrice,
-        initialPrice: req.body.yourPrice,
-        highestPrice: req.body.highestPrice,
-        priceType: req.body.priceType,
-        paymentMethod: req.body.paymentMethod,
-        paymentTimeLimit: req.body.paymentTimeLimit,
-        minOrderLimit: req.body.minOrderLimit,
-        maxOrderLimit: req.body.maxOrderLimit,
-        terms: req.body.terms,
-        autoReply: req.body.autoReply,
-        counterPartyCondition: req.body.counterPartyCondition,
-        orderStatus: req.body.orderStatus,
-        buyerUPID: req.body.buyerUPID,
-      });
+      const orderDetails = orderTable
+        .findOne({ _id: ObjectId(orderId) })
+        .populate("postId")
+        .populate("postedUserId", "email address.userName")
+        .populate("createdby", "email address.userName")
+        .populate("paymentId", "upiId name");
 
       return utilityFunc.sendSuccessResponse(
         {
-          message: "Sell Order Created Successfully",
-          data: newOrder,
+          data: {
+            message: "get Order Deatils",
+            buyOrder: orderDetails,
+          },
         },
         resp
       );
-    } catch (err) {}
+    } catch (err) {
+      return utilityFunc.sendErrorResponse(err, resp);
+    }
+  },
+
+  updateOrderStatus: async (req, resp) => {
+    try {
+      let validationData = utilityFunc.validationData(req.body, [
+        "status",
+        "orderId",
+      ]);
+
+      if (validationData && validationData.status) {
+        throw new Error("Invalid Validation Data");
+      }
+
+      let orderId = req.body.orderId;
+      let updatedOrderStatus = req.body.status;
+
+      let orderDeatils = await orderTable.findOneAndUpdate(
+        { _id: orderId },
+        { $set: { orderStatus: updatedOrderStatus } },
+        { new: true }
+      );
+
+      let postDetails = await postTable.findById({ _id: orderDeatils.postId });
+
+      if (postDetails.available > 0) {
+        // Change the Post Order Status to In Progress
+        await postTable.findOneAndUpdate(
+          { _id: orderDeatils.postId },
+          { $set: { postStatus: "InProgress" } }
+        );
+      } else if (postDetails.available <= 0) {
+        await postTable.findOneAndUpdate(
+          { _id: orderDeatils.postId },
+          { $set: { postStatus: "Completed" } }
+        );
+      }
+      // console.log(
+      //   "🚀 ~ file: order.js:100 ~ updateOrderStatus: ~ postDetails:",
+      //   postDetails
+      // );
+
+      // console.log(
+      //   "🚀 ~ file: order.js:67 ~ updateOrderStatus: ~ postDetails:",
+      //   orderDeatils
+      // );
+      if (!orderDeatils) {
+        throw (new Error("Failed to Update Order Status"), resp);
+      }
+
+      return utilityFunc.sendSuccessResponse(
+        {
+          message: `Order Status Changed to ${updatedOrderStatus}`,
+          updatedOrder: orderDeatils,
+        },
+        resp
+      );
+    } catch (err) {
+      return utilityFunc.sendErrorResponse(err, resp);
+    }
   },
 };
