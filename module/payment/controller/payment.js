@@ -223,8 +223,10 @@ module.exports = {
       );
 
       if (getwalletBalance <= 0) {
-       console.log("🚀 ~ file: payment.js:226 ~ getFundingWalletAmount: ~ getwalletBalance <= 0:", getwalletBalance <= 0)
-       
+        console.log(
+          "🚀 ~ file: payment.js:226 ~ getFundingWalletAmount: ~ getwalletBalance <= 0:",
+          getwalletBalance <= 0
+        );
 
         return utilityFunc.sendErrorResponse(
           { message: "wallet have insufficient balance" },

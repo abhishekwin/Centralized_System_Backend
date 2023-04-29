@@ -27,6 +27,13 @@ const moduleConfig = [
     route: true,
     routeName: "order",
   },
+  {
+    type: "message",
+    apiVersion: "v1",
+    status: true,
+    route: true,
+    routeName: "message",
+  }
 ];
 
 module.exports = moduleConfig;

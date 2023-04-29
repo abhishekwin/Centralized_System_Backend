@@ -1,36 +1,43 @@
 const express = require("express");
 const router = express.Router();
-const postController = require("./controller/posts");
-// const orderController = require("./controller/order");
+const postController = require("./controller/PostAd");
+const orderController = require("./controller/order");
 const Authentication = require("../../utility/functions");
 
-//@desc API for creating Buy P2P Orders user can create new buy order using this API
+//@desc API for creating Buy P2P Orders user can post new buy p2p Ads using this API
 //@route order/createBuyPost
 //@access private
 router.post(
-  "/createBuyPost",Authentication.userAuthentication, postController.createBuyPost
+  "/createBuyPostAd",
+  Authentication.userAuthentication,
+  postController.createBuyPostAd
 );
 //@desc API for creating Sell P2P Orders user can create new sell order using this API
 //@route order/createSellPost
 //@access private
-router.post("/createSellPost",Authentication.userAuthentication,postController.createSellPost);
-//@desc API for getting the buy order details user can get details about the  buy order
-//@route order/getBuyPosts
+router.post(
+  "/createSellPostAd",
+  Authentication.userAuthentication,
+  postController.createSellPostAd
+);
+module.exports = router;
+
+//@desc API for proceed sell usdt order where user can sell usdt or CryprtoAssets for Buy usdt Ad
+//@route order/sellUSDT
 //@access private
-router.post("/getBuyPosts", Authentication.userAuthentication, postController.getBuyPosts);
+router.post(
+  "/sellUSDT",
+  Authentication.userAuthentication,
+  orderController.sellUsdt
+);
 //@desc API for getting the sell order details user can get details about the sell order
 //@route order/getSellPosts
 //@access private
-router.post("/getSellPosts", Authentication.userAuthentication, postController.getSellPosts);
+// router.post("/getSellPosts", Authentication.userAuthentication, postController.getSellPosts);
 
-//@desc API for getting the order details based on userId 
+//@desc API for getting the order details based on userId
 //@route order/getOrderDetails
 //@access private
-router.get("/getOrder/:id", Authentication.userAuthentication, postController.getorderById);
+// router.get("/getOrder/:id", Authentication.userAuthentication, postController.getorderById);
 
-
-//@desc API for Buy order
-//@route order/buyOrder
-//@access private
-// router.post("/buyOrder", Authentication.userAuthentication, orderController.buyOrder);
-module.exports = router;
+router.post("/updateOrderStatusForSellUsdt", Authentication.userAuthentication, orderController.updateOrderStatusForSellUsdt);

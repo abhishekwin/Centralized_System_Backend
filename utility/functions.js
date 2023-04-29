@@ -2,6 +2,8 @@ const nodemailer = require("nodemailer");
 const Web3 = require("web3");
 const User = require("../module/user/model/userTable");
 require("dotenv").config();
+const { default: axios } = require("axios");
+
 
 // const tokenAbi = require("../../../config/tokenAbi.json")
 
