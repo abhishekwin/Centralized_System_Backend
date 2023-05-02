@@ -8,13 +8,14 @@ const sticky = require("sticky-session");
 const cluster = require("cluster");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const ObjectId = require("objectid");
 require("dotenv").config();
 const swaggerUI = require("swagger-ui-express");
-const fs = require("fs")
-const YAML = require('yaml')
-const file  = fs.readFileSync('./swagger.yaml', 'utf8')
-const swaggerDocument = YAML.parse(file)
-
+const fs = require("fs");
+const YAML = require("yaml");
+const userTable = require("./module/user/model/userTable");
+const file = fs.readFileSync("./swagger.yaml", "utf8");
+const swaggerDocument = YAML.parse(file);
 
 app = express();
 app.use(cors());
@@ -26,8 +27,7 @@ app.use(
   })
 );
 
-app.use("/api-docs",swaggerUI.serve,swaggerUI.setup(swaggerDocument));
-
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
@@ -41,6 +41,30 @@ app.use("/public", express.static(__dirname + "/public"));
 
 app.set("port", process.env.PORT || 5004);
 const http = require("http").createServer(app);
+
+const io = require("socket.io")(http);
+io.on("connection", (socket) => {
+  console.log("Connected");
+  require("./utility/socket")(socket, io);
+  socket.on("userconnect", async (userid) => {
+    console.log("🚀 ~ file: app.js:49 ~ socket.on ~ userid:", userid)
+    if (userid) {
+      await userTable.findOneAndUpdate(
+        { _id: ObjectId(userid) },
+        { $set: { socketId: socket.id, online: "OnLine" } }
+      );
+    }
+  });
+  socket.on("disconnect", async () => {
+    if (socket.id) {
+      await userTable.findOneAndUpdate(
+        { socketId: socket.id },
+        { $set: { online: "OffLine" } }
+      );
+    }
+    console.log("Disconnected");
+  });
+});
 
 if (!sticky.listen(http, app.get("port"))) {
   http.once("listening", function() {
