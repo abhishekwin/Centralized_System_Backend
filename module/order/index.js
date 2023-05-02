@@ -45,4 +45,17 @@ router.get("/order/:id",Authentication.userAuthentication,orderController.getord
 
 router.post("/updateOrderStatus",Authentication.userAuthentication,orderController.updateOrderStatus);
 
+
+//@desc API for Order Complete Status
+//@route order/completeOrderStatus
+//@access private
+
+router.post("/completeOrderStatus",Authentication.userAuthentication,orderController.completeOrder)
+
+//@desc API for Cancel Order 
+//@route order/cancelOrder
+//@access private
+
+router.post("/cancelOrderStatus",Authentication.userAuthentication,orderController.cancelledOrder);
+
 module.exports = router;
