@@ -1,39 +1,32 @@
 const mongoose = require("mongoose");
-
-let sellUsdt = mongoose.Schema(
-  {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
-    
-    byCrypto: { type: String, default: "USDT" },
-    withFiat: { type: String, default: "INR" },
-    yourPrice: { type: Number, default: 0 },
-    amount: { type: Number, default: 0 },
-    totalAmount: { type: Number, default: 0 },
-    minOrderLimit: { type: Number, default: 0 },
-    maxOrderLimit: { type: Number, default: 0 }, 
-    paymentWindow: { type: Date, default: Date.now },
-    terms: { type: String, default: "" },
-    autoReply: { type: String, default: "" },
-    counterPartyCondition: { type: String, default: "" },
-    sellUsdtStatus: {
-      type: String,
-      enum: [
-        "inProgress",
-        "Payment Pending",
-        "RequestSendedAmount",
-        "RequestRecivedAmount",
-        "PaymentCompleted",
-        "orderCompleted",
-        "Canceled"
-      ],
-      default: "inProgress",
-    },
-    sellerUpiId: { type: String, default: "" },
+let orderTable = mongoose.Schema({
+  postId: { type: mongoose.Schema.Types.ObjectId, ref: "postTable" },
+  postedUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  orderCreatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  paymentId: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
+  cryptoBuyUser: { type: String, default: "" },
+  cryptoSellUser: { type: String, default: "" },
+  amount: { type: Number, default: 0 },
+  quantity: { type: Number, default: 0 },
+  paymentMethod: { type: String, default: "" },
+  orderStatus: {
+    type: String,
+    enum: [
+      "OrderNotCreated",
+      "OrderCreated",
+      "OrderPending",
+      "OrderCompleted",
+      "NotifiyBuyerMoneySent",
+      "NotifiySellerMoneySent",
+      "PaymentSentBuyer",
+      "PaymentSentSeller",
+      "Cancelled",
+      "Pending",
+    ],
+    default: "OrderNotCreated",
   },
-  { timestamp: true, versionKey: false }
-);
-module.exports = mongoose.model("sellUsdt", sellUsdt);
+  buyerUPID: { type: String, default: "" },
+  sellerUPID: { type: String, default: "" },
+});
 
-
-// paymentStatus change
+module.exports = mongoose.model("OrderTable", orderTable);

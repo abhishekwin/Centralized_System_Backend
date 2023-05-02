@@ -5,15 +5,15 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const path = require("path");
 const sticky = require("sticky-session");
-const ObjectId = require("objectid");
-const Usertable = require("./module/user/model/userTable");
 const cluster = require("cluster");
 const cookieParser = require("cookie-parser");
 const logger = require("morgan");
+const ObjectId = require("objectid");
 require("dotenv").config();
 const swaggerUI = require("swagger-ui-express");
 const fs = require("fs");
 const YAML = require("yaml");
+const userTable = require("./module/user/model/userTable");
 const file = fs.readFileSync("./swagger.yaml", "utf8");
 const swaggerDocument = YAML.parse(file);
 
@@ -26,7 +26,9 @@ app.use(
     limit: "150mb",
   })
 );
+
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
+
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 app.use(logger("dev"));
@@ -34,22 +36,31 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/public", express.static(__dirname + "/publqic"));
+
+app.use("/public", express.static(__dirname + "/public"));
+
 app.set("port", process.env.PORT || 5004);
 const http = require("http").createServer(app);
 
 const io = require("socket.io")(http);
 io.on("connection", (socket) => {
   console.log("Connected");
-  require('./utility/socket')(socket, io)
+  require("./utility/socket")(socket, io);
   socket.on("userconnect", async (userid) => {
-    if(userid){
-      await Usertable.findOneAndUpdate({_id: ObjectId(userid)},{$set: {socketId: socket.id, online: "OnLine"}})
+    console.log("🚀 ~ file: app.js:49 ~ socket.on ~ userid:", userid)
+    if (userid) {
+      await userTable.findOneAndUpdate(
+        { _id: ObjectId(userid) },
+        { $set: { socketId: socket.id, online: "OnLine" } }
+      );
     }
   });
-  socket.on("disconnect",async () => {
-    if(socket.id){
-      await Usertable.findOneAndUpdate({socketId: socket.id},{$set: {online: "OffLine"}})
+  socket.on("disconnect", async () => {
+    if (socket.id) {
+      await userTable.findOneAndUpdate(
+        { socketId: socket.id },
+        { $set: { online: "OffLine" } }
+      );
     }
     console.log("Disconnected");
   });
@@ -103,4 +114,3 @@ db.once("open", function callback() {
 
 // all routes
 require("./routes/mainRoutes")(app);
-//

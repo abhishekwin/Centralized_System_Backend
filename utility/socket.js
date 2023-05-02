@@ -1,11 +1,10 @@
 const MessageTable = require("../module/message/model/messageTable");
-const UserTable = require("../module/user/model/userTable");
 const OrderTable = require("../module/order/model/orderTable");
-
+const UserTable = require("../module/user/model/userTable");
 module.exports = function(socket, io) {
   console.log("SoketId-", socket.id);
   socket.on("sendMessage", async (data) => {
-    console.log("data ==> ",data)
+    console.log("data ==> ", data);
     let receverExist = null;
     let senderExist = null;
     let orderExist = null;
@@ -46,8 +45,8 @@ module.exports = function(socket, io) {
       createdAt: new Date(),
     };
     await MessageTable.create(createdData);
-    if(receverExist.socketId) {
-        io.to(receverExist.socketId).emit('newMessage', createdData);
+    if (receverExist.socketId) {
+      io.to(receverExist.socketId).emit("newMessage", createdData);
     }
   });
 };

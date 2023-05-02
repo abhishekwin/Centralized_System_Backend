@@ -22,7 +22,8 @@ let userSchema = mongoose.Schema(
     token: { type: String, default: "" },
     cryptoAddress: { type: String, default: "" },
     wId: { type: String, default: "" },
-    balance: { type: Number, default: 0 },
+    fundingBalance: { type: Number, default: 0 },
+    spotBalance: { type: Number, default: 0 },
     status: { type: Boolean, default: false },
     address: {
       userName: { type: String, default: "" },
@@ -41,3 +42,6 @@ let userSchema = mongoose.Schema(
 );
 
 const User = (module.exports = mongoose.model("User", userSchema));
+
+// TODO: Add Funding & Spot Wallet Key and Create API For Conversion From Funding to Spot Wallet and Vice Versa
+// TODO: Rename balance to Funding wallet in all place

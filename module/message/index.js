@@ -9,4 +9,3 @@ const postController = require("./controller/chat");
 router.post("/message", Authentication.userAuthentication, postController.getAllMessage);
 
 module.exports = router;
-

@@ -33,7 +33,14 @@ const moduleConfig = [
     status: true,
     route: true,
     routeName: "message",
-  }
+  },
+  {
+    type: "spot",
+    apiVersion: "v1",
+    status: true,
+    route: true,
+    routeName: "spot",
+  },
 ];
 
 module.exports = moduleConfig;
