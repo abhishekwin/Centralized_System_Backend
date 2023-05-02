@@ -26,6 +26,7 @@
     "nodemon": "^2.0.22",
     "objectid": "^3.2.1",
     "path": "^0.12.7",
+    "socket.io": "^4.6.1",
     "sticky-session": "^1.1.2",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.2",
