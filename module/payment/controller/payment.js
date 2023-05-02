@@ -223,8 +223,10 @@ module.exports = {
       );
 
       if (getwalletBalance <= 0) {
-       console.log("🚀 ~ file: payment.js:226 ~ getFundingWalletAmount: ~ getwalletBalance <= 0:", getwalletBalance <= 0)
-       
+        console.log(
+          "🚀 ~ file: payment.js:226 ~ getFundingWalletAmount: ~ getwalletBalance <= 0:",
+          getwalletBalance <= 0
+        );
 
         return utilityFunc.sendErrorResponse(
           { message: "wallet have insufficient balance" },
@@ -274,6 +276,70 @@ module.exports = {
     } catch (error) {
       console.log("error", error);
       return utilityFunc.sendErrorResponse(error, res);
+    }
+  },
+
+  conversionBalance: async (req, resp) => {
+    try {
+      let validationData = await utilityFunc.validationData(req.body, [
+        "userId",
+        "amount",
+        "fromType",
+        "toType",
+      ]);
+
+      if (validationData && validationData.status) {
+        throw new Error(validationData.error, resp);
+      }
+
+      let userDetails, currentBalance;
+      currentBalance = await User.findById({ _id: req.body.userId }); //Current Details
+
+      if (req.body.fromType === "funding" && req.body.toType === "spot") {
+        if (req.body.amount > currentBalance.fundingBalance) {
+          throw new Error("Amount is greater than funding Balance", resp);
+        }
+        userDetails = await User.findByIdAndUpdate(
+          { _id: req.body.userId },
+          {
+            $set: {
+              fundingBalance: currentBalance.fundingBalance - req.body.amount,
+              spotBalance: currentBalance.spotBalance + req.body.amount,
+            },
+          },
+          { new: true }
+        );
+      } else if (
+        req.body.fromType === "spot" &&
+        req.body.toType === "funding"
+      ) {
+        if (req.body.amount > currentBalance.spotBalance) {
+          throw new Error("Amount is greater than spot Balance", resp);
+        }
+        userDetails = await User.findByIdAndUpdate(
+          { _id: req.body.userId },
+          {
+            $set: {
+              spotBalance: currentBalance.spotBalance - req.body.amount,
+              fundingBalance: currentBalance.fundingBalance + req.body.amount,
+            },
+          },
+          { new: true }
+        );
+      }
+
+      return utilityFunc.sendSuccessResponse(
+        {
+          data: {
+            message: "Balance Transfered Successfully",
+            updatedFundingBalance: userDetails.fundingBalance,
+            updatedSpotBalance: userDetails.spotBalance,
+          },
+        },
+        resp
+      );
+    } catch (error) {
+      return utilityFunc.sendErrorResponse(error, resp);
     }
   },
 };

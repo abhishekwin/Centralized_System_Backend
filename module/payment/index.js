@@ -10,4 +10,6 @@ router.post("/deleteUpi",userAuthentication,paymentMethodController.deleteUPI);
 router.post("/withdraw", paymentMethodController.AssetTransferFromHotWallet)
 router.get("/getWalletBalance",Authentication.userAuthentication, paymentMethodController.getFundingWalletAmount);
 
+router.post("/walletTransfer",Authentication.userAuthentication, paymentMethodController.conversionBalance);
+
 module.exports = router;
