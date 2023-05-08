@@ -19,16 +19,24 @@ module.exports = {
       let data = req.body;
 
       let validationData = await utilityFunc.validationData(req.body, [
-        "c",
+        "password",
       ]);
       if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, res);
+        throw new Error(validationData.error, res);
       }
       if (!data.email && !data.phoneNumber) {
-        return utilityFunc.sendErrorResponse(
-          "Email Or Phone Number Is Required!",
-          res
-        );
+        throw new Error("Email Or Phone Number Is Required!", res);
+      }
+
+      const emailAlreadyExists = await User.find({ email: data.email });
+      if (emailAlreadyExists) {
+        throw new Error("Email Already Registered", res);
+      }
+
+      const phoneAlreadyExist = await User.find({ phone: data.phoneNumber });
+
+      if (phoneAlreadyExist) {
+        throw new Error("Phone Already Registered", res);
       }
 
       if (data.phoneNumber) {
@@ -152,8 +160,7 @@ module.exports = {
         }
       }
     } catch (error) {
-      console.log("error ==> ", error);
-      utilityFunc.sendErrorResponse(error, res);
+      return utilityFunc.sendErrorResponse(error, res);
     }
   },
   verifyAccount: async (req, res) => {
@@ -270,7 +277,6 @@ module.exports = {
           "Email Or Phone Number Is Required!",
           res
         );
-
       }
       if (data.email) {
         let userFound = await User.findOne({ email: data.email });
@@ -337,32 +343,35 @@ module.exports = {
         "password",
       ]);
       if (validationData && validationData.status) {
-        return utilityFunc.sendErrorResponse(validationData.error, res);
+        throw new Error(validationData.error, res);
       }
       if (!data.email && !data.phoneNumber) {
-        return utilityFunc.sendErrorResponse(
-          "Email Or Phone Number Is Required!",
-          res
-        );
+        throw new Error("Email Or Phone Number Is Required!", res);
       }
 
       if (data.phoneNumber) {
         const userExist = await User.findOne({ phoneNumber: data.phoneNumber });
         if (!userExist) {
           // If user does not exist
-          return utilityFunc.sendErrorResponse("User does not exists", res);
+          throw new Error("User does not exists", res);
         } else {
           // Get the password & Hash it
           let passcheck = await bcrypt.compare(
             data.password,
             userExist.password
           );
-          console.log("🚀 ~ file: user.js:360 ~ login: ~ passcheck:", passcheck)
-          
+          console.log(
+            "🚀 ~ file: user.js:360 ~ login: ~ passcheck:",
+            passcheck
+          );
+
           // Compare the passwords
           if (passcheck) {
-            console.log("🚀 ~ file: user.js:363 ~ login: ~ passcheck:", passcheck)
-            
+            console.log(
+              "🚀 ~ file: user.js:363 ~ login: ~ passcheck:",
+              passcheck
+            );
+
             // Create New the JWT token
             const newToken = await jwt.sign(
               {
@@ -388,22 +397,21 @@ module.exports = {
               },
             });
           } else {
-            return utilityFunc.sendErrorResponse("Invalid password!", res);
+            throw new Error("Invalid password!", res);
           }
         }
       }
       if (data.email) {
         const userExist = await User.findOne({ email: data.email });
         if (!userExist) {
-          return utilityFunc.sendErrorResponse("User does not exists", res);
+          throw new Error("User does not exists", res);
         } else {
           // Get the password & Hash it
           let passcheck = await bcrypt.compare(
             data.password,
             userExist.password
           );
-          
-          
+
           // Compare the passwords
           if (passcheck) {
             // Create New the JWT token
@@ -420,25 +428,27 @@ module.exports = {
               { email: data.email },
               { $set: { token: newToken } }
             );
-            return utilityFunc.sendSuccessResponse({
-              data: {
-                login: true,
-                exist: true,
-                password: true,
-                updatedToken: newToken,
-                user: newUser,
+            return utilityFunc.sendSuccessResponse(
+              {
+                data: {
+                  login: true,
+                  exist: true,
+                  password: true,
+                  updatedToken: newToken,
+                  user: newUser,
+                },
               },
-            },res);
+              res
+            );
           }
         }
       }
     } catch (error) {
-      console.log("error ==> ", error);
-      utilityFunc.sendErrorResponse(error, res);
+      return utilityFunc.sendErrorResponse(error, res);
     }
   },
-  resendOtp : async (req, res) => {
-     try {
+  resendOtp: async (req, res) => {
+    try {
       let data = req.body;
       if (!data.email && !data.phoneNumber) {
         return utilityFunc.sendErrorResponse(
@@ -446,45 +456,56 @@ module.exports = {
           res
         );
       }
-  
+
       if (data.phoneNumber) {
-        let userExist = await User.findOne({phoneNumber : data.phoneNumber});
-  
-        if(userExist){
+        let userExist = await User.findOne({ phoneNumber: data.phoneNumber });
+
+        if (userExist) {
           let OTP = await utilityFunc.createMsg(req);
           await User.findOneAndUpdate(
-            {phoneNumber : data.phoneNumber},
-            { $set :{OTP : OTP}}
-          )
-          return utilityFunc.sendSuccessResponse({
-              message : "OTP Sent!"
-          },res);
+            { phoneNumber: data.phoneNumber },
+            { $set: { OTP: OTP } }
+          );
+          return utilityFunc.sendSuccessResponse(
+            {
+              message: "OTP Sent!",
+            },
+            res
+          );
         }
       }
-      if(data.email){
-        let userExist = await User.findOne({email : data.email});
-        if(userExist){
+      if (data.email) {
+        let userExist = await User.findOne({ email: data.email });
+        if (userExist) {
           let OTP = await utilityFunc.createEmail(req);
           await User.findOneAndUpdate(
-            {email : data.email},
-            { set : {OTP : OTP.OTP}}
+            { email: data.email },
+            { set: { OTP: OTP.OTP } }
           );
-          return utilityFunc.sendSuccessResponse({
-            message : "OTP Sent!"
-          },res);
-        }
-        else{
-          return utilityFunc.sendErrorResponse({
-            message : "User Doesn't Exists !"
-          },res);
+          return utilityFunc.sendSuccessResponse(
+            {
+              message: "OTP Sent!",
+            },
+            res
+          );
+        } else {
+          return utilityFunc.sendErrorResponse(
+            {
+              message: "User Doesn't Exists !",
+            },
+            res
+          );
         }
       }
-     } catch (error) {
-      console.log("🚀 ~ file: user.js:468 ~ resendOtp: ~ error:", error)
-      return utilityFunc.sendErrorResponse({
-        error
-      },res);
-     } 
+    } catch (error) {
+      console.log("🚀 ~ file: user.js:468 ~ resendOtp: ~ error:", error);
+      return utilityFunc.sendErrorResponse(
+        {
+          error,
+        },
+        res
+      );
+    }
   },
   getProfile: async (req, res) => {
     try {
@@ -606,7 +627,6 @@ module.exports = {
     }
   },
 
-
   adharSumitOtp: async (req, res) => {
     try {
       let data = req.body;
@@ -672,7 +692,6 @@ module.exports = {
               pinCode: data.pinCode,
               city: data.city,
               country: data.country,
-              
             },
             aadharCardNo: data.aadharCardNo,
             pancardNo: data.pancardNo,
@@ -712,11 +731,16 @@ module.exports = {
           );
         } else {
           let OTP = await utilityFunc.createEmail(req);
-          console.log("🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:", OTP.OTP);
+          console.log(
+            "🚀 ~ file: user.js:605 ~ updateEmailPhone: ~ OTP:",
+            OTP.OTP
+          );
 
           await User.findOneAndUpdate(
             { _id: req.decode._id },
-            { $set: { email: data.email, OTP: OTP.OTP, isEmailVerified: false } }
+            {
+              $set: { email: data.email, OTP: OTP.OTP, isEmailVerified: false },
+            }
           );
           return utilityFunc.sendSuccessResponse(
             {
@@ -726,8 +750,7 @@ module.exports = {
             res
           );
         }
-      } else
-       if (data.phoneNumber) {
+      } else if (data.phoneNumber) {
         let phoneNumberExist = await User.find({
           phoneNumber: req.body.phoneNumber,
         });
@@ -772,7 +795,7 @@ module.exports = {
 
       return utilityFunc.sendErrorResponse(
         {
-          error
+          error,
         },
         res
       );
@@ -855,10 +878,9 @@ module.exports = {
               return utilityFunc.sendSuccessResponse(
                 {
                   message: "Password Updated",
-                  data:{
-                    success: true
+                  data: {
+                    success: true,
                   },
-                 
                 },
                 res
               );
@@ -897,9 +919,9 @@ module.exports = {
         return utilityFunc.sendSuccessResponse(
           {
             message: "Password Changed",
-           data:{
-            success:true
-           }
+            data: {
+              success: true,
+            },
           },
           res
         );
