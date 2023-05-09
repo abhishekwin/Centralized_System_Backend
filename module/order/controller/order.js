@@ -57,7 +57,7 @@ module.exports = {
         throw new Error(`Order id is required!`);
       }
 
-      const orderDetails = orderTable
+      const orderDetails =  await orderTable
         .findOne({ _id: ObjectId(orderId) })
         .populate("postId")
         .populate("postedUserId", "email address.userName")
