@@ -3,7 +3,6 @@ const Web3 = require("web3");
 const User = require("../module/user/model/userTable");
 require("dotenv").config();
 
-
 // const tokenAbi = require("../../../config/tokenAbi.json")
 
 const keystoreJsonV3 = require("../config/constants.json");
@@ -74,7 +73,7 @@ let sendSuccessResponse = function(result, res, other) {
   return res.status(result.status_code || 200).send(sendData);
 };
 let validationData = function(reqData, validateData) {
-  let validationResppnse = {
+  let validationResponse = {
     error: "",
     status: false,
   };
@@ -84,12 +83,12 @@ let validationData = function(reqData, validateData) {
       reqData[`${validateData[i]}`] == "" ||
       reqData[`${validateData[i]}`] == null
     ) {
-      validationResppnse.error = `${validateData[i]} is Required!`;
-      validationResppnse.status = true;
+      validationResponse.error = `${validateData[i]} is Required!`;
+      validationResponse.status = true;
       break;
     }
   }
-  return validationResppnse;
+  return validationResponse;
 };
 let createMsg = async function(req) {
   var OTP = (Math.floor(Math.random() * 1000000) + 1000000)
@@ -240,7 +239,7 @@ const TransferFundsToHotWallet = async function(
   console.log("🚀 ~ file: functions.js:239 ~ wId:", wId.wId);
 
   const object = await GenratePrivateKey(wId.wId);
-  console.log("🚀 ~ file: functions.js:241 ~ object:", object)
+  console.log("🚀 ~ file: functions.js:241 ~ object:", object);
   // console.log("🚀 ~ file: functions.js:247 ~ value:", );
 
   const data = await web3.eth.accounts.signTransaction(
@@ -258,12 +257,10 @@ const TransferFundsToHotWallet = async function(
 
   console.log("🚀 ~ file: functions.js:254 ~ data:", data);
 
-  const recipt = await web3.eth
-    .sendSignedTransaction(data.rawTransaction);
-    return recipt;
+  const recipt = await web3.eth.sendSignedTransaction(data.rawTransaction);
+  return recipt;
 
   // await web3.eth.getBalance(object.publicAddress).then(console.log);
-
 };
 
 // const updateWalletBalance = async function(id, value) {

@@ -47,7 +47,7 @@ io.on("connection", (socket) => {
   console.log("Connected");
   require("./utility/socket")(socket, io);
   socket.on("userconnect", async (userid) => {
-    console.log("🚀 ~ file: app.js:49 ~ socket.on ~ userid:", userid)
+    console.log("🚀 ~ file: app.js:49 ~ socket.on ~ userid:", userid);
     if (userid) {
       await userTable.findOneAndUpdate(
         { _id: ObjectId(userid) },

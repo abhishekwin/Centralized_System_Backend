@@ -19,11 +19,15 @@ let userSchema = mongoose.Schema(
     isEmailVerified: { type: Boolean, default: false },
     isPhoneVerified: { type: Boolean, default: false },
     isKYCDone: { type: Boolean, default: false },
-    token: { type: String, default: "" },
-    cryptoAddress: { type: String, default: "" },
-    wId: { type: String, default: "" },
+    token: { type: String, default: "" }, //auth
+    cryptoAddress: { type: String, default: "" }, //walletAddress
+    wId: { type: String, default: "" }, //walletId
     fundingBalance: { type: Number, default: 0 },
     spotBalance: { type: Number, default: 0 },
+    spotCurrency: [
+      { Name: { type: String, default: "" } },
+      { Number: { type: Number, default: 0 } },
+    ],
     status: { type: Boolean, default: false },
     address: {
       userName: { type: String, default: "" },

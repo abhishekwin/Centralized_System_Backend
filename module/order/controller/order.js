@@ -50,6 +50,7 @@ module.exports = {
       return utilityFunc.sendErrorResponse(err, resp);
     }
   },
+
   getorderById: async (req, resp) => {
     try {
       const orderId = req.params.id;
@@ -77,6 +78,7 @@ module.exports = {
       return utilityFunc.sendErrorResponse(err, resp);
     }
   },
+
   updateOrderStatus: async (req, resp) => {
     try {
       let validationData = utilityFunc.validationData(req.body, [
