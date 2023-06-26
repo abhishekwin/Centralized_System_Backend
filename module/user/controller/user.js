@@ -33,7 +33,7 @@ module.exports = {
         throw new Error("Email Already Registered", res);
       }
 
-      const phoneAlreadyExist = await User.find({ phone: data.phoneNumber });
+      const phoneAlreadyExist = await User.findOne({ phone: data.phoneNumber });
 
       if (phoneAlreadyExist) {
         throw new Error("Phone Already Registered", res);
