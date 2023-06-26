@@ -1,5 +1,5 @@
 const env = {
-    mongoAtlasUri: "mongodb://localhost:27017/centralizedSystem"
+    mongoAtlasUri: "mongodb+srv://yogeshblockchain:MaMGHErV4Dcd8AqM@cluster0.pi69b4c.mongodb.net/CEX"
 }
 
 module.exports = env;
