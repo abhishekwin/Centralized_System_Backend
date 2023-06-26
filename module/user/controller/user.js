@@ -28,7 +28,7 @@ module.exports = {
         throw new Error("Email Or Phone Number Is Required!", res);
       }
 
-      const emailAlreadyExists = await User.find({ email: data.email });
+      const emailAlreadyExists = await User.findOne({ email: data.email });
       if (emailAlreadyExists) {
         throw new Error("Email Already Registered", res);
       }
