@@ -27,16 +27,19 @@ module.exports = {
       if (!data.email && !data.phoneNumber) {
         throw new Error("Email Or Phone Number Is Required!", res);
       }
+      if(data.email){
 
       const emailAlreadyExists = await User.findOne({ email: data.email });
       if (emailAlreadyExists) {
         throw new Error("Email Already Registered", res);
       }
+    }
+      if(data.phoneNumber){
+        const phoneAlreadyExist = await User.findOne({ phone: data.phoneNumber });
 
-      const phoneAlreadyExist = await User.findOne({ phone: data.phoneNumber });
-
-      if (phoneAlreadyExist) {
-        throw new Error("Phone Already Registered", res);
+        if (phoneAlreadyExist) {
+          throw new Error("Phone Already Registered", res);
+        }
       }
 
       if (data.phoneNumber) {
