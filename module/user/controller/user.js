@@ -241,27 +241,27 @@ module.exports = {
       console.log("userExist", userExist);
       if (userExist) {
         return utilityFunc.sendSuccessResponse(
-          { login: false, exist: true, password: true, user: userExist },
+          {data: { login: false, exist: true, password: true, user: userExist }},
           res
         );
       } else {
-        return utilityFunc.sendSuccessResponse({}, res, {
+        return utilityFunc.sendSuccessResponse({}, res,  {data: {
           login: false,
           exist: false,
           password: true,
-        });
+        }});
       }
     }
     if (data.email && !data.googleId && !data.facebookId) {
       userExist = await User.findOne({ email: data.email });
       if (userExist) {
         return utilityFunc.sendSuccessResponse(
-          { login: false, exist: true, password: true, user: userExist },
+          {data: { login: false, exist: true, password: true, user: userExist }},
           res
         );
       } else {
         return utilityFunc.sendSuccessResponse(
-          { login: false, exist: false, password: true },
+          {data: {login: false, exist: false, password: true }},
           res
         );
       }
